@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CSV to Line chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <h1>CSV to Line chart</h1>
+    <p>Upload a CSV file to plot a line chart.</p>
+    <p>
+      The first column should be the timestamp and the rest of the columns should be the data
+      fields.
+    </p>
+    <input type="file" id="fileInput" />
+    <div style="height: 50vh">
+      <canvas id="chartCanvas"></canvas>
+    </div>
+
+    <script>
+      let currentChart = null;
+      document.getElementById("fileInput").addEventListener("change", handleFileUpload);
+
+      function handleFileUpload(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          const contents = e.target.result;
+          if (file.type === "text/csv") {
+            const data = parseCSV(contents);
+            plotLineChart(data);
+          } else {
+            alert("Please upload a CSV file.");
+          }
+        };
+
+        reader.readAsText(file);
+      }
+
+      function parseCSV(contents) {
+        const lines = contents.split("\n");
+        const labels = lines[0]
+          .split(",")
+          .map((label) => label.trim())
+          .slice(1);
+        console.log(labels);
+        const timestamps = [];
+        const values = labels.reduce((acc, label) => {
+          acc[label] = [];
+          return acc;
+        }, {});
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].split(",").map((value) => value.trim());
+          const timestamp = line[0];
+          timestamps.push(timestamp);
+          for (let j = 1; j < line.length; j++) {
+            const label = labels[j - 1];
+            const value = parseFloat(line[j]);
+            console.log(label, value);
+            values[label].push(value);
+          }
+        }
+        return { timestamps, values };
+      }
+
+      function plotLineChart(data) {
+        if (currentChart) {
+          currentChart.destroy();
+        }
+        console.log(data);
+        const ctx = document.getElementById("chartCanvas").getContext("2d");
+        const datasets = [];
+
+        // Add datasets for each data field
+        for (const label of Object.keys(data.values)) {
+          const color = getRandomColor();
+          datasets.push({
+            label: label,
+            data: data.values[label],
+            borderColor: color,
+            backgroundColor: color,
+            fill: false,
+            borderWidth: 1,
+          });
+        }
+
+        // Create the line chart
+        currentChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: data.timestamps,
+            datasets: datasets,
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            spanGaps: true,
+          },
+        });
+
+        function getRandomColor() {
+          const letters = "0123456789ABCDEF";
+          let color = "#";
+          for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+          }
+          return color;
+        }
+      }
+    </script>
+  </body>
+</html>
