@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>JSONL to Line chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <h1>JSONL to Line chart</h1>
+    <p>Upload a JSONL file to plot a line chart.</p>
+    <p>
+      The first column should be the timestamp and the rest of the columns
+      should be the data fields.
+    </p>
+    <input type="file" id="fileInput" />
+    <div style="height: 50vh">
+      <canvas id="chartCanvas"></canvas>
+    </div>
+
+    <script>
+      let currentChart = null;
+      document
+        .getElementById('fileInput')
+        .addEventListener('change', handleFileUpload);
+
+      function handleFileUpload(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          const contents = e.target.result;
+          const data = parseJSONL(contents);
+          plotLineChart(data);
+        };
+
+        reader.readAsText(file);
+      }
+
+      function parseJSONL(contents) {
+        try {
+          const lines = contents
+            .split('\n')
+            .filter(line => line.trim() !== '')
+            .map(line => JSON.parse(line));
+          const timestamps = lines.map(line => line.timestamp);
+          const allKeysCount = lines.reduce((acc, line) => {
+            Object.keys(line).forEach(key => {
+              if (key !== 'timestamp' && !acc[key]) {
+                acc[key] = 0;
+              }
+              acc[key]++;
+            });
+            return acc;
+          }, {});
+          const allKeys = Object.keys(allKeysCount).map(
+            key => allKeysCount[key] > 0.3 * lines.length && key
+          );
+          const values = {};
+          for (const line of lines) {
+            for (const key of allKeys) {
+              if (!values[key]) {
+                values[key] = [];
+              }
+              values[key].push(
+                line[key] ? (line[key] <= 100 ? line[key] : 100) : 0
+              );
+            }
+          }
+          return { timestamps, values };
+        } catch (error) {
+          alert('Please upload a JSONL file.');
+        }
+      }
+
+      function plotLineChart(data) {
+        if (currentChart) {
+          currentChart.destroy();
+        }
+        console.log(data);
+        const ctx = document.getElementById('chartCanvas').getContext('2d');
+        const datasets = [];
+
+        // Add datasets for each data field
+        for (const label of Object.keys(data.values)) {
+          const color = getRandomColor();
+          datasets.push({
+            label: label,
+            data: data.values[label],
+            borderColor: color,
+            backgroundColor: color,
+            fill: false,
+            borderWidth: 1
+          });
+        }
+
+        // Create the line chart
+        currentChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.timestamps,
+            datasets: datasets
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            spanGaps: true
+          }
+        });
+
+        function getRandomColor() {
+          const letters = '0123456789ABCDEF';
+          let color = '#';
+          for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+          }
+          return color;
+        }
+      }
+    </script>
+  </body>
+</html>
