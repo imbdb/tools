@@ -11,6 +11,7 @@
         }
         .section {
             margin-bottom: 40px;
+            padding: 20px;
         }
         .contrast-high {
             color: #000000;
@@ -23,6 +24,18 @@
         .contrast-low {
             color: #777777;
             background-color: #BBBBBB;
+        }
+        .contrast-inverse-high {
+            color: #FFFFFF;
+            background-color: #000000;
+        }
+        .contrast-inverse-medium {
+            color: #DDDDDD;
+            background-color: #555555;
+        }
+        .contrast-inverse-low {
+            color: #BBBBBB;
+            background-color: #777777;
         }
         .font-size-small {
             font-size: 12px;
@@ -40,6 +53,7 @@
 </head>
 <body>
 
+    <!-- Black text on white background -->
     <div class="section contrast-high font-size-small">
         <p>This is high contrast with small font size.</p>
         <p>The quick brown fox jumps over the lazy dog.</p>
@@ -55,6 +69,7 @@
         <p>The quick brown fox jumps over the lazy dog.</p>
     </div>
 
+    <!-- Medium contrast -->
     <div class="section contrast-medium font-size-small">
         <p>This is medium contrast with small font size.</p>
         <p>The quick brown fox jumps over the lazy dog.</p>
@@ -70,6 +85,7 @@
         <p>The quick brown fox jumps over the lazy dog.</p>
     </div>
 
+    <!-- Low contrast -->
     <div class="section contrast-low font-size-small">
         <p>This is low contrast with small font size.</p>
         <p>The quick brown fox jumps over the lazy dog.</p>
@@ -85,8 +101,51 @@
         <p>The quick brown fox jumps over the lazy dog.</p>
     </div>
 
-    <div class="section contrast-high font-size-xlarge">
-        <p>This is high contrast with extra large font size.</p>
+    <!-- White text on black background -->
+    <div class="section contrast-inverse-high font-size-small">
+        <p>This is high contrast with small font size (white on black).</p>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+    </div>
+
+    <div class="section contrast-inverse-high font-size-medium">
+        <p>This is high contrast with medium font size (white on black).</p>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+    </div>
+
+    <div class="section contrast-inverse-high font-size-large">
+        <p>This is high contrast with large font size (white on black).</p>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+    </div>
+
+    <!-- Medium contrast (white on medium gray) -->
+    <div class="section contrast-inverse-medium font-size-small">
+        <p>This is medium contrast with small font size (white on dark gray).</p>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+    </div>
+
+    <div class="section contrast-inverse-medium font-size-medium">
+        <p>This is medium contrast with medium font size (white on dark gray).</p>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+    </div>
+
+    <div class="section contrast-inverse-medium font-size-large">
+        <p>This is medium contrast with large font size (white on dark gray).</p>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+    </div>
+
+    <!-- Low contrast (white on light gray) -->
+    <div class="section contrast-inverse-low font-size-small">
+        <p>This is low contrast with small font size (white on light gray).</p>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+    </div>
+
+    <div class="section contrast-inverse-low font-size-medium">
+        <p>This is low contrast with medium font size (white on light gray).</p>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+    </div>
+
+    <div class="section contrast-inverse-low font-size-large">
+        <p>This is low contrast with large font size (white on light gray).</p>
         <p>The quick brown fox jumps over the lazy dog.</p>
     </div>
 
