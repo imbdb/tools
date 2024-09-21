@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Merge PDFs</title>
+  </head>
+  <body>
+    <h2>Merge PDFs</h2>
+    <input type="file" id="pdfFiles" multiple accept="application/pdf" />
+    <button id="mergeButton">Merge PDFs</button>
+    <div>
+      Select multiple files by pressing ctrl and clicking on files. Please
+      refresh after merging one set of files.
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script>
+      async function mergePDFs(pdfFiles) {
+        const mergedPdf = await PDFLib.PDFDocument.create();
+
+        for (let i = 0; i < pdfFiles.length; i++) {
+          const arrayBuffer = await pdfFiles[i].arrayBuffer();
+          const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+          const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+          pages.forEach((page) => mergedPdf.addPage(page));
+        }
+
+        const mergedPdfBytes = await mergedPdf.save();
+        downloadMergedPDF(mergedPdfBytes);
+      }
+
+      function downloadMergedPDF(pdfBytes) {
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "merged.pdf";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      document.getElementById("mergeButton").addEventListener("click", () => {
+        const pdfFiles = document.getElementById("pdfFiles").files;
+        if (pdfFiles.length > 0) {
+          mergePDFs(pdfFiles);
+        } else {
+          alert("Please select PDF files.");
+        }
+      });
+    </script>
+  </body>
+</html>
