@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JSONL Log Viewer with Expandable Entries</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+
+    <style>
+      #logContainer {
+        margin-top: 20px;
+        overflow-y: auto;
+      }
+      .log-entry {
+        position: relative;
+      }
+      .log-header {
+        display: flex;
+        align-items: center;
+      }
+      .log-line {
+        font-family: monospace;
+        white-space: nowrap;
+        flex-grow: 1;
+        margin-left: 5px;
+      }
+      .expand-btn {
+        cursor: pointer;
+        font-size: 16px;
+        border: none;
+        background: none;
+        padding: 0;
+      }
+      .monaco-editor-container {
+        display: none; /* Hide by default */
+        width: 100%;
+        height: 200px;
+        margin-top: 5px;
+      }
+      button {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <h1>JSONL Log Viewer with Expandable Entries</h1>
+      <input type="file" id="fileInput" />
+      <button id="oldestFirstButton">Oldest First</button>
+      <button id="newestFirstButton">Newest First</button>
+      <button id="utcButton">UTC</button>
+      <button id="localButton">Local</button>
+
+      <div id="logContainer"></div>
+    </div>
+    <!-- Monaco Editor CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/loader.min.js"></script>
+    <script>
+      let logs = [];
+      let editors = []; // To hold Monaco editor instances
+      let utcConversion = true; // Default to UTC time
+      let timestampSortOrder = true; // Default to 'Oldest First'
+      require.config({
+        paths: {
+          vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs",
+        },
+      });
+      require(["vs/editor/editor.main"], function () {
+        document
+          .getElementById("fileInput")
+          .addEventListener("change", handleFileUpload);
+        document
+          .getElementById("oldestFirstButton")
+          .addEventListener("click", () =>
+            sortLogsByTimestamp(true, utcConversion)
+          );
+        document
+          .getElementById("newestFirstButton")
+          .addEventListener("click", () =>
+            sortLogsByTimestamp(false, utcConversion)
+          );
+        document
+          .getElementById("utcButton")
+          .addEventListener("click", () =>
+            sortLogsByTimestamp(timestampSortOrder, true)
+          );
+        document
+          .getElementById("localButton")
+          .addEventListener("click", () =>
+            sortLogsByTimestamp(timestampSortOrder, false)
+          );
+
+        // Default sort order to 'Oldest First'
+        sortLogsByTimestamp(true);
+      });
+
+      function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const fileContent = e.target.result;
+          logs = parseJSONL(fileContent);
+          sortLogsByTimestamp(true); // Sort logs by 'Oldest First' by default
+        };
+        reader.readAsText(file);
+      }
+
+      function parseJSONL(content) {
+        return content
+          .split("\n")
+          .filter((line) => line.trim() !== "")
+          .map((line) => JSON.parse(line));
+      }
+      function formatTimestamp(timestamp, toUTC = true) {
+        const date = new Date(timestamp);
+
+        // Format the date and time based on the choice of UTC or Local time
+        const options = {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          fractionalSecondDigits: 3,
+        };
+
+        if (toUTC) {
+          return (
+            date.toLocaleString("en-US", { ...options, timeZone: "UTC" }) +
+            " UTC"
+          );
+        } else {
+          return date.toLocaleString("en-US", options) + " Local";
+        }
+      }
+      function renderLogs(logs, utc) {
+        const logContainer = document.getElementById("logContainer");
+        logContainer.innerHTML = ""; // Clear previous logs
+        editors = []; // Clear previous Monaco editor instances
+
+        logs.forEach((log, index) => {
+          const logDiv = document.createElement("div");
+          logDiv.className = "log-entry";
+
+          const logHeader = document.createElement("div");
+          logHeader.className = "log-header";
+
+          const expandBtn = document.createElement("button");
+          expandBtn.className = "expand-btn";
+          expandBtn.innerHTML = "▶"; // Arrow pointing to the right (collapsed state)
+          logDiv.addEventListener("click", () =>
+            toggleExpand(index, expandBtn)
+          );
+
+          const logLine = document.createElement("div");
+          logLine.className = "log-line";
+          logLine.textContent = `${formatTimestamp(
+            log.timestamp,
+            utc
+          )} ${log.level.toUpperCase()} ${JSON.stringify(log)}`; // One-line JSON
+
+          const monacoDiv = document.createElement("div");
+          monacoDiv.className = "monaco-editor-container";
+          monacoDiv.id = `editor-${index}`; // Unique ID for each Monaco editor
+
+          logHeader.appendChild(expandBtn);
+          logHeader.appendChild(logLine);
+
+          logDiv.appendChild(logHeader);
+          logDiv.appendChild(monacoDiv);
+          logContainer.appendChild(logDiv);
+
+          // Initialize Monaco Editor but keep it hidden initially
+          const editor = monaco.editor.create(monacoDiv, {
+            value: JSON.stringify(log, null, 2), // Prettified JSON
+            language: "json",
+            readOnly: true,
+            automaticLayout: true,
+            theme: "vs-light",
+          });
+          editors.push(editor); // Store editor instances for later use
+        });
+      }
+
+      function toggleExpand(index, button) {
+        const monacoDiv = document.getElementById(`editor-${index}`);
+        if (
+          monacoDiv.style.display === "none" ||
+          monacoDiv.style.display === ""
+        ) {
+          // Show the Monaco editor
+          monacoDiv.style.display = "block";
+          button.innerHTML = "▼"; // Arrow pointing down (expanded state)
+        } else {
+          // Hide the Monaco editor
+          monacoDiv.style.display = "none";
+          button.innerHTML = "▶"; // Arrow pointing to the right (collapsed state)
+        }
+      }
+
+      function sortLogsByTimestamp(isOldestFirst, utc = true) {
+        timestampSortOrder = isOldestFirst; // Store the sort order for future reference
+        utcConversion = utc; // Store the time format for future reference
+        logs.sort((a, b) => {
+          const dateA = new Date(a.timestamp).getTime();
+          const dateB = new Date(b.timestamp).getTime();
+          return isOldestFirst ? dateA - dateB : dateB - dateA; // Sort ascending for oldest, descending for newest
+        });
+        renderLogs(logs, utc); // Re-render the logs after sorting
+      }
+    </script>
+  </body>
+</html>
