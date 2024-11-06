@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zoom SDK JWT Generator</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@picocss/pico@1.5.5/css/pico.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.27/jsrsasign-all-min.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Zoom SDK JWT Generator</h1>
+      <form id="jwtForm">
+        <label for="sdkKey">SDK Key:</label>
+        <input type="text" id="sdkKey" name="sdkKey" required />
+
+        <label for="sdkSecret">SDK Secret:</label>
+        <input type="password" id="sdkSecret" name="sdkSecret" required />
+
+        <label for="meetingNumber">Meeting Number:</label>
+        <input type="text" id="meetingNumber" name="meetingNumber" required />
+
+        <label for="role">Role:</label>
+        <select id="role" name="role" required>
+          <option value="0">Attendee</option>
+          <option value="1">Host</option>
+        </select>
+
+        <button type="button" onclick="generateJwt()">Generate JWT</button>
+      </form>
+
+      <section id="resultSection" style="display: none; margin-top: 20px">
+        <h2>Generated JWT Token</h2>
+        <pre
+          id="jwtOutput"
+          style="word-wrap: break-word; white-space: pre-wrap"
+        ></pre>
+      </section>
+    </main>
+
+    <script>
+      function generateJwt() {
+        const sdkKey = document.getElementById("sdkKey").value;
+        const sdkSecret = document.getElementById("sdkSecret").value;
+        const meetingNumber = document.getElementById("meetingNumber").value;
+        const role = parseInt(document.getElementById("role").value, 10);
+
+        const iat = Math.floor(Date.now() / 1000) - 30;
+        const exp = iat + 60 * 60 * 2;
+        const oHeader = { alg: "HS256", typ: "JWT" };
+
+        const oPayload = {
+          sdkKey: sdkKey,
+          appKey: sdkKey,
+          mn: meetingNumber,
+          role: role,
+          iat: iat,
+          exp: exp,
+          tokenExp: exp,
+        };
+
+        const sHeader = JSON.stringify(oHeader);
+        const sPayload = JSON.stringify(oPayload);
+        const sdkJWT = KJUR.jws.JWS.sign("HS256", sHeader, sPayload, sdkSecret);
+
+        document.getElementById("jwtOutput").textContent = sdkJWT;
+        document.getElementById("resultSection").style.display = "block";
+      }
+    </script>
+  </body>
+</html>
