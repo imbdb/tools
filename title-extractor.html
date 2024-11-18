@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PDF Title Extractor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 0 20px;
+      }
+      .controls {
+        margin: 20px 0;
+        padding: 15px;
+        background: #f5f5f5;
+        border-radius: 4px;
+      }
+      .drop-zone {
+        border: 2px dashed #ccc;
+        border-radius: 4px;
+        padding: 20px;
+        text-align: center;
+        margin: 20px 0;
+        background: #f9f9f9;
+      }
+      .drop-zone.dragover {
+        background: #e1e1e1;
+        border-color: #999;
+      }
+      #results {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #eee;
+        border-radius: 4px;
+      }
+      .title-entry {
+        margin: 10px 0;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+      }
+      .title-entry input[type="checkbox"] {
+        margin-right: 10px;
+      }
+      .page-number {
+        color: #666;
+        font-size: 0.9em;
+      }
+      .font-size {
+        color: #888;
+        font-size: 0.8em;
+        margin-left: 10px;
+      }
+      .debug-info {
+        font-size: 0.8em;
+        color: #666;
+        margin-top: 5px;
+        font-style: italic;
+      }
+      select,
+      input {
+        padding: 5px;
+        margin: 5px;
+      }
+      .download-btn {
+        background: #4caf50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 10px;
+      }
+      .download-btn:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+      .filter-controls {
+        margin: 10px 0;
+        padding: 10px;
+        background: #f0f0f0;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>PDF Title Extractor</h1>
+
+    <div class="controls">
+      <div>
+        <label for="algorithm">Algorithm:</label>
+        <select id="algorithm">
+          <option value="original">
+            Original (Max font size, top-most blocks)
+          </option>
+          <option value="max2">
+            Max2 (Two largest fonts in natural order)
+          </option>
+          <option value="eliot">
+            Eliot (Configurable font sizes, Y then X order)
+          </option>
+        </select>
+      </div>
+      <div id="eliotOptions" style="display: none">
+        <label for="eliotTfs">Font size indices (comma-separated):</label>
+        <input type="text" id="eliotTfs" value="0,1" placeholder="e.g., 0,1" />
+      </div>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+      <p>Drop your PDF here or click to select</p>
+      <input type="file" id="fileInput" accept=".pdf" style="display: none" />
+    </div>
+
+    <div class="filter-controls">
+      <button id="selectAll" class="download-btn">Select All</button>
+      <button id="deselectAll" class="download-btn">Deselect All</button>
+      <button id="downloadPdf" class="download-btn" disabled>
+        Download Selected Titles
+      </button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      window.jspdf = window.jspdf.jsPDF;
+      window.jsPDF = window.jspdf;
+
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const results = document.getElementById("results");
+      const algorithmSelect = document.getElementById("algorithm");
+      const eliotOptions = document.getElementById("eliotOptions");
+      const downloadBtn = document.getElementById("downloadPdf");
+      const selectAllBtn = document.getElementById("selectAll");
+      const deselectAllBtn = document.getElementById("deselectAll");
+
+      function updateDownloadButton() {
+        const hasSelectedTitles =
+          document.querySelectorAll(".title-checkbox:checked").length > 0;
+        downloadBtn.disabled = !hasSelectedTitles;
+      }
+
+      // Event Listeners
+      function setupEventListeners() {
+        // Previous event listeners remain the same
+        dropZone.addEventListener("click", () => fileInput.click());
+        dropZone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          dropZone.classList.add("dragover");
+        });
+        dropZone.addEventListener("dragleave", () => {
+          dropZone.classList.remove("dragover");
+        });
+        dropZone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          dropZone.classList.remove("dragover");
+          handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener("change", (e) =>
+          handleFiles(e.target.files)
+        );
+
+        // Updated button event listeners
+        selectAllBtn.addEventListener("click", () => {
+          document.querySelectorAll(".title-checkbox").forEach((checkbox) => {
+            checkbox.checked = true;
+          });
+          updateDownloadButton();
+        });
+
+        deselectAllBtn.addEventListener("click", () => {
+          document.querySelectorAll(".title-checkbox").forEach((checkbox) => {
+            checkbox.checked = false;
+          });
+          updateDownloadButton();
+        });
+
+        // Updated download button listener
+        downloadBtn.addEventListener("click", () => {
+          if (!downloadBtn.disabled) {
+            generateTitlesPDF();
+          }
+        });
+      }
+
+      function handleFiles(files) {
+        if (files.length === 0) return;
+        const file = files[0];
+        if (file.type !== "application/pdf") {
+          alert("Please upload a PDF file");
+          return;
+        }
+        extractTitles(file);
+      }
+
+      function filterTitle(title) {
+        // Remove titles that are likely not useful
+        const unusablePatternsRegex = [
+          /^page\s+\d+$/i, // Page numbers
+          /^\d+$/, // Just numbers
+          /^(table\s+of\s+contents|index)$/i, // TOC or index
+          /^(figure|table)\s+\d+/i, // Figure or table captions
+          /^\s*$/, // Empty strings
+          /^[^a-z0-9]+$/i, // Strings with no alphanumeric characters
+          /^(header|footer)$/i, // Headers/footers
+          /^([©®™]|copyright)/i, // Copyright symbols and text
+          /^\d{1,3}(\.\d{1,3})*$/, // Section numbers like 1.2.3
+        ];
+
+        // Check if title matches any unusable pattern
+        return !unusablePatternsRegex.some((regex) => regex.test(title.trim()));
+      }
+
+      function updateDownloadButton() {
+        const hasSelectedTitles =
+          document.querySelectorAll(".title-checkbox:checked").length > 0;
+        downloadBtn.disabled = !hasSelectedTitles;
+      }
+
+      async function generateTitlesPDF() {
+        try {
+          const doc = new jsPDF();
+          const selectedTitles = [];
+
+          // Collect selected titles
+          document
+            .querySelectorAll(".title-checkbox:checked")
+            .forEach((checkbox) => {
+              const titleText = checkbox.getAttribute("data-title");
+              const pageName = checkbox.getAttribute("data-page");
+              selectedTitles.push({
+                text: titleText,
+                page: pageName,
+              });
+            });
+
+          // Set initial position and margins
+          const margin = 20;
+          let yPosition = margin;
+          const pageWidth = doc.internal.pageSize.width;
+
+          // Add title
+          doc.setFontSize(16);
+          doc.text("Extracted Titles", margin, yPosition);
+          yPosition += 15;
+
+          // Set up table columns
+          const columns = [
+            { header: "No.", width: 15 },
+            { header: "Title", width: pageWidth - 65 }, // Adjust width based on page width
+            { header: "Page", width: 20 },
+          ];
+
+          // Draw table header
+          doc.setFontSize(12);
+          doc.setFont(undefined, "bold");
+
+          // Draw header background
+          doc.setFillColor(240, 240, 240);
+          doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 10, "F");
+
+          // Draw header text
+          let xPosition = margin;
+          columns.forEach((col) => {
+            doc.text(col.header, xPosition, yPosition);
+            xPosition += col.width;
+          });
+          yPosition += 10;
+
+          // Draw header line
+          doc.setLineWidth(0.2);
+          doc.line(margin, yPosition - 5, pageWidth - margin, yPosition - 5);
+
+          // Reset font to normal
+          doc.setFont(undefined, "normal");
+
+          // Add table rows
+          selectedTitles.forEach((title, index) => {
+            // Calculate row height based on title length
+            const titleLines = doc.splitTextToSize(
+              title.text,
+              columns[1].width - 5
+            );
+            const rowHeight = Math.max(titleLines.length * 7, 8);
+
+            // Check if we need a new page
+            if (yPosition + rowHeight > doc.internal.pageSize.height - margin) {
+              doc.addPage();
+              yPosition = margin;
+
+              // Repeat header on new page
+              doc.setFont(undefined, "bold");
+              doc.setFillColor(240, 240, 240);
+              doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 10, "F");
+
+              xPosition = margin;
+              columns.forEach((col) => {
+                doc.text(col.header, xPosition, yPosition);
+                xPosition += col.width;
+              });
+              yPosition += 10;
+              doc.line(
+                margin,
+                yPosition - 5,
+                pageWidth - margin,
+                yPosition - 5
+              );
+              doc.setFont(undefined, "normal");
+            }
+
+            // Draw row data
+            xPosition = margin;
+
+            // Serial number
+            doc.text((index + 1).toString(), xPosition, yPosition);
+            xPosition += columns[0].width;
+
+            // Title (possibly multi-line)
+            doc.text(titleLines, xPosition, yPosition);
+            xPosition += columns[1].width;
+
+            // Page number
+            doc.text(title.page.toString(), xPosition, yPosition);
+
+            // Draw row separator line
+            yPosition += rowHeight;
+            doc.line(margin, yPosition - 2, pageWidth - margin, yPosition - 2);
+
+            // Add some spacing after each row
+            yPosition += 5;
+          });
+
+          // Save the PDF
+          doc.save("extracted_titles.pdf");
+        } catch (error) {
+          console.error("Error generating PDF:", error);
+          alert("Error generating PDF. Please try again.");
+        }
+      }
+
+      // Original algorithm implementation
+      function originalAlgorithm(items) {
+        if (!items || items.length === 0) return [];
+
+        const maxFontSize = Math.max(...items.map((item) => item.height));
+
+        return items
+          .filter((item) => item.height === maxFontSize)
+          .sort((a, b) => a.transform[5] - b.transform[5])
+          .map((item) => ({
+            text: item.str,
+            fontSize: item.height,
+            y: item.transform[5],
+          }));
+      }
+
+      // Max2 algorithm implementation
+      function max2Algorithm(items) {
+        if (!items || items.length === 0) return [];
+
+        const fontSizes = [...new Set(items.map((item) => item.height))].sort(
+          (a, b) => b - a
+        );
+        const maxFont = fontSizes[0];
+        const secondMaxFont = fontSizes[1];
+
+        const titles = [];
+
+        for (const item of items) {
+          if (item.height === maxFont || item.height === secondMaxFont) {
+            titles.push({
+              text: item.str,
+              fontSize: item.height,
+              y: item.transform[5],
+            });
+          } else if (titles.length > 0) {
+            break;
+          }
+        }
+
+        return titles;
+      }
+
+      // Eliot algorithm implementation
+      function eliotAlgorithm(items, fontIndices) {
+        if (!items || items.length === 0) return [];
+
+        const fontSizes = [...new Set(items.map((item) => item.height))].sort(
+          (a, b) => b - a
+        );
+
+        const selectedFontSizes = fontIndices
+          .map((index) => fontSizes[index])
+          .filter((size) => size !== undefined);
+
+        return items
+          .filter((item) => selectedFontSizes.includes(item.height))
+          .sort((a, b) => {
+            if (Math.abs(a.transform[5] - b.transform[5]) > 5) {
+              return b.transform[5] - a.transform[5];
+            }
+            return a.transform[4] - b.transform[4];
+          })
+          .map((item) => ({
+            text: item.str,
+            fontSize: item.height,
+            y: item.transform[5],
+          }));
+      }
+
+      async function extractTitles(file) {
+        results.innerHTML = "Processing PDF...";
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+          const allTitles = [];
+
+          const algorithm = algorithmSelect.value;
+          const eliotTfs = document
+            .getElementById("eliotTfs")
+            .value.split(",")
+            .map((n) => parseInt(n.trim()))
+            .filter((n) => !isNaN(n));
+
+          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            try {
+              const page = await pdf.getPage(pageNum);
+              const textContent = await page.getTextContent();
+
+              let titles;
+              switch (algorithm) {
+                case "original":
+                  titles = originalAlgorithm(textContent.items);
+                  break;
+                case "max2":
+                  titles = max2Algorithm(textContent.items);
+                  break;
+                case "eliot":
+                  titles = eliotAlgorithm(textContent.items, eliotTfs);
+                  break;
+                default:
+                  titles = originalAlgorithm(textContent.items);
+              }
+
+              titles.forEach((title) => {
+                if (title.text.trim() && filterTitle(title.text)) {
+                  allTitles.push({
+                    ...title,
+                    page: pageNum,
+                  });
+                }
+              });
+            } catch (pageError) {
+              console.warn(`Error processing page ${pageNum}:`, pageError);
+              continue;
+            }
+          }
+
+          // Display results with checkboxes
+          results.innerHTML =
+            allTitles.length > 0
+              ? allTitles
+                  .map(
+                    (title) => `
+                        <div class="title-entry">
+                            <input type="checkbox" 
+                                class="title-checkbox" 
+                                data-title="${title.text}" 
+                                data-page="${title.page}"
+                                onchange="updateDownloadButton()">
+                            <div>
+                                <strong>${title.text}</strong>
+                                <span class="page-number">(Page ${
+                                  title.page
+                                })</span>
+                                <span class="font-size">(Font Size: ${title.fontSize.toFixed(
+                                  1
+                                )})</span>
+                            </div>
+                        </div>
+                    `
+                  )
+                  .join("")
+              : "<p>No titles found in the document.</p>";
+
+          downloadBtn.disabled = true;
+        } catch (error) {
+          results.innerHTML = `<p>Error processing PDF: ${error.message}</p>`;
+          console.error("PDF processing error:", error);
+        }
+      }
+
+      setupEventListeners();
+    </script>
+  </body>
+</html>
