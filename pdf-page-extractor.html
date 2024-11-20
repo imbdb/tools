@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Page Selector with Preview</title>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.4.0/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .header {
+        margin-bottom: 20px;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .thumbnail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 10px;
+        padding: 20px;
+      }
+      .thumbnail-container {
+        position: relative;
+        background: white;
+        padding: 5px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .thumbnail-container canvas {
+        width: 100%;
+        height: auto;
+      }
+      .page-number {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      #range-input {
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        flex: 1;
+      }
+      #file-input {
+        padding: 10px;
+        border-radius: 4px;
+        border: 2px dashed #ccc;
+        width: 100%;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>PDF Page Selector with Preview</h1>
+      <input type="file" id="file-input" accept=".pdf" />
+      <div class="controls">
+        <input
+          type="text"
+          id="range-input"
+          placeholder="Enter ranges (e.g., 0-2,5-6)"
+        />
+        <input
+          class="download-name"
+          id="download-name"
+          placeholder="Download file name"
+          value="selected-pages.pdf"
+        />
+        <button id="apply-ranges-btn" disabled>Keep Selected Pages</button>
+      </div>
+    </div>
+    <div class="thumbnail-grid" id="thumbnail-grid"></div>
+    <script>
+      const { PDFDocument } = PDFLib;
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+      let originalPdfBytes = null;
+      let pdfDoc = null;
+      let orginalFile = null;
+      document
+        .getElementById("file-input")
+        .addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          orginalFile = file;
+          const arrayBuffer = await file.arrayBuffer();
+          originalPdfBytes = new Uint8Array(arrayBuffer);
+
+          try {
+            pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            document.getElementById("thumbnail-grid").innerHTML = "";
+            await renderThumbnails();
+            document.getElementById("apply-ranges-btn").disabled = false;
+          } catch (error) {
+            console.error("Error loading PDF:", error);
+            alert("Error loading PDF. Please try another file.");
+          }
+        });
+
+      async function renderThumbnails() {
+        const grid = document.getElementById("thumbnail-grid");
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+          const page = await pdfDoc.getPage(i);
+          const scale = 0.5;
+          const viewport = page.getViewport({ scale });
+
+          const container = document.createElement("div");
+          container.className = "thumbnail-container";
+
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          const pageNumber = document.createElement("div");
+          pageNumber.className = "page-number";
+          pageNumber.textContent = `Page ${i}`;
+
+          container.appendChild(canvas);
+          container.appendChild(pageNumber);
+          grid.appendChild(container);
+
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport,
+          };
+          await page.render(renderContext).promise;
+        }
+      }
+
+      document
+        .getElementById("apply-ranges-btn")
+        .addEventListener("click", async () => {
+          const rangeInput = document.getElementById("range-input").value;
+          if (!rangeInput) {
+            alert("Please enter valid ranges.");
+            return;
+          }
+
+          const ranges = parseRanges(rangeInput);
+          if (!ranges.length) {
+            alert("Invalid range input. Please try again.");
+            return;
+          }
+
+          try {
+            const arrayBuffer = await orginalFile.arrayBuffer();
+            const loadedPdfDoc = await PDFDocument.load(arrayBuffer);
+            const totalPages = loadedPdfDoc.getPageCount();
+            const pagesToKeep = Array.from(
+              new Set(flattenRanges(ranges, totalPages))
+            );
+
+            const newPdfDoc = await PDFDocument.create();
+            for (const pageIndex of pagesToKeep) {
+              const [copiedPage] = await newPdfDoc.copyPages(loadedPdfDoc, [
+                pageIndex,
+              ]);
+              newPdfDoc.addPage(copiedPage);
+            }
+
+            const modifiedPdfBytes = await newPdfDoc.save();
+            downloadPdf(
+              modifiedPdfBytes,
+              document.getElementById("download-name").value
+            );
+          } catch (error) {
+            console.error("Error processing PDF:", error);
+            alert("Error processing PDF. Please try again.");
+          }
+        });
+
+      function parseRanges(rangeStr) {
+        return rangeStr
+          .split(",")
+          .map((range) => {
+            const [start, end] = range
+              .split("-")
+              .map(Number)
+              .map((n) => n - 1); // make the start and end zero-based
+            if (isNaN(start) || (end !== undefined && isNaN(end))) return null;
+            return end === undefined ? [start, start] : [start, end];
+          })
+          .filter(Boolean);
+      }
+
+      function flattenRanges(ranges, totalPages) {
+        const validRanges = ranges.map(([start, end]) => [
+          Math.max(0, start),
+          Math.min(totalPages - 1, end),
+        ]);
+        return validRanges.flatMap(([start, end]) =>
+          Array.from({ length: end - start + 1 }, (_, i) => start + i)
+        );
+      }
+
+      function downloadPdf(bytes, fileName) {
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName || "output.pdf";
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    </script>
+  </body>
+</html>
