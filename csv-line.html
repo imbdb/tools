@@ -3,13 +3,18 @@
   <head>
     <title>CSV to Line chart</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="0a60befb-ff78-45f4-934b-f2fc8b1fc27e"
+    ></script>
   </head>
   <body>
     <h1>CSV to Line chart</h1>
     <p>Upload a CSV file to plot a line chart.</p>
     <p>
-      The first column should be the timestamp and the rest of the columns should be the data
-      fields.
+      The first column should be the timestamp and the rest of the columns
+      should be the data fields.
     </p>
     <input type="file" id="fileInput" />
     <div style="height: 50vh">
@@ -18,7 +23,9 @@
 
     <script>
       let currentChart = null;
-      document.getElementById("fileInput").addEventListener("change", handleFileUpload);
+      document
+        .getElementById("fileInput")
+        .addEventListener("change", handleFileUpload);
 
       function handleFileUpload(event) {
         const file = event.target.files[0];
