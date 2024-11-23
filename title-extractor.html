@@ -115,6 +115,15 @@
         <label for="eliotTfs">Font size indices (comma-separated):</label>
         <input type="text" id="eliotTfs" value="0,1" placeholder="e.g., 0,1" />
       </div>
+      <label for="mergedpages"
+        >Merged Pages:
+        <input
+          type="text"
+          id="mergedpages"
+          placeholder="Enter Merged Pages"
+          value="1"
+        />
+      </label>
     </div>
 
     <div class="drop-zone" id="dropZone">
@@ -125,6 +134,16 @@
     <div class="filter-controls">
       <button id="selectAll" class="download-btn">Select All</button>
       <button id="deselectAll" class="download-btn">Deselect All</button>
+      <label for="heading"
+        >Heading:
+        <input
+          type="text"
+          id="heading"
+          placeholder="Enter Heading"
+          value="Extracted Titles"
+        />
+      </label>
+
       <button id="downloadPdf" class="download-btn" disabled>
         Download Selected Titles
       </button>
@@ -151,6 +170,27 @@
         const hasSelectedTitles =
           document.querySelectorAll(".title-checkbox:checked").length > 0;
         downloadBtn.disabled = !hasSelectedTitles;
+      }
+
+      // function to return base64 of a page of pdf
+      async function getPageAsBase64(pdf, pageNum) {
+        const page = await pdf.getPage(pageNum);
+        const scale = 0.5;
+        const viewport = page.getViewport({ scale });
+
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
+
+        await page.render(renderContext).promise;
+        // return data url
+        return canvas.toDataURL("image/jpeg");
       }
 
       // Event Listeners
@@ -239,7 +279,9 @@
           document
             .querySelectorAll(".title-checkbox:checked")
             .forEach((checkbox) => {
-              const titleText = checkbox.getAttribute("data-title");
+              const titleText = document.getElementById(
+                `title-input-${checkbox.getAttribute("data-page")}`
+              ).value;
               const pageName = checkbox.getAttribute("data-page");
               selectedTitles.push({
                 text: titleText,
@@ -254,7 +296,7 @@
 
           // Add title
           doc.setFontSize(16);
-          doc.text("Extracted Titles", margin, yPosition);
+          doc.text(document.getElementById("heading").value, margin, yPosition);
           yPosition += 15;
 
           // Set up table columns
@@ -264,13 +306,23 @@
             { header: "Page", width: 20 },
           ];
 
+          const headerHeight = 6;
+          const mergedPages = parseInt(
+            document.getElementById("mergedpages").value
+          );
           // Draw table header
           doc.setFontSize(12);
           doc.setFont(undefined, "bold");
 
           // Draw header background
           doc.setFillColor(240, 240, 240);
-          doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 10, "F");
+          doc.rect(
+            margin,
+            yPosition - 5,
+            pageWidth - 2 * margin,
+            headerHeight,
+            "F"
+          );
 
           // Draw header text
           let xPosition = margin;
@@ -278,7 +330,7 @@
             doc.text(col.header, xPosition, yPosition);
             xPosition += col.width;
           });
-          yPosition += 10;
+          yPosition += headerHeight;
 
           // Draw header line
           doc.setLineWidth(0.2);
@@ -294,8 +346,8 @@
               title.text,
               columns[1].width - 5
             );
-            const rowHeight = Math.max(titleLines.length * 7, 8);
-
+            const rowHeight = Math.max(titleLines.length * 4, 4);
+            console.log("Row height", rowHeight);
             // Check if we need a new page
             if (yPosition + rowHeight > doc.internal.pageSize.height - margin) {
               doc.addPage();
@@ -304,14 +356,20 @@
               // Repeat header on new page
               doc.setFont(undefined, "bold");
               doc.setFillColor(240, 240, 240);
-              doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 10, "F");
+              doc.rect(
+                margin,
+                yPosition - 5,
+                pageWidth - 2 * margin,
+                headerHeight,
+                "F"
+              );
 
               xPosition = margin;
               columns.forEach((col) => {
                 doc.text(col.header, xPosition, yPosition);
                 xPosition += col.width;
               });
-              yPosition += 10;
+              yPosition += headerHeight;
               doc.line(
                 margin,
                 yPosition - 5,
@@ -333,14 +391,15 @@
             xPosition += columns[1].width;
 
             // Page number
-            doc.text(title.page.toString(), xPosition, yPosition);
+            pageNum = Math.ceil(title.page / mergedPages);
+            doc.text(pageNum.toString(), xPosition, yPosition);
 
             // Draw row separator line
             yPosition += rowHeight;
             doc.line(margin, yPosition - 2, pageWidth - margin, yPosition - 2);
 
             // Add some spacing after each row
-            yPosition += 5;
+            yPosition += 2;
           });
 
           // Save the PDF
@@ -359,7 +418,6 @@
 
         return items
           .filter((item) => item.height === maxFontSize)
-          .sort((a, b) => a.transform[5] - b.transform[5])
           .map((item) => ({
             text: item.str,
             fontSize: item.height,
@@ -422,7 +480,7 @@
       }
 
       async function extractTitles(file) {
-        results.innerHTML = "Processing PDF...";
+        results.innerHTML = "Processing PDF... 0%";
         try {
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
@@ -434,7 +492,7 @@
             .value.split(",")
             .map((n) => parseInt(n.trim()))
             .filter((n) => !isNaN(n));
-
+          let prevTitle = "";
           for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
             try {
               const page = await pdf.getPage(pageNum);
@@ -455,20 +513,36 @@
                   titles = originalAlgorithm(textContent.items);
               }
 
-              titles.forEach((title) => {
+              // merge titles from same page and push to processedTitles
+              titles = [
+                {
+                  text: titles.map((title) => title.text).join(" "),
+                  fontSize: Math.max(...titles.map((title) => title.fontSize)),
+                },
+              ];
+
+              for (const title of titles) {
                 if (title.text.trim() && filterTitle(title.text)) {
                   allTitles.push({
                     ...title,
                     page: pageNum,
+                    image: `${await getPageAsBase64(pdf, pageNum)}`,
+                    checked: !(prevTitle === title.text),
                   });
                 }
-              });
+              }
+              prevTitle = titles[0].text;
             } catch (pageError) {
               console.warn(`Error processing page ${pageNum}:`, pageError);
               continue;
             }
+            results.innerHTML = `Processing PDF... ${Math.round(
+              (pageNum / pdf.numPages) * 100
+            )}%`;
           }
-
+          const mergedPages = parseInt(
+            document.getElementById("mergedpages").value
+          );
           // Display results with checkboxes
           results.innerHTML =
             allTitles.length > 0
@@ -476,16 +550,24 @@
                   .map(
                     (title) => `
                         <div class="title-entry">
+                            <image src="${title.image}" />
                             <input type="checkbox" 
                                 class="title-checkbox" 
                                 data-title="${title.text}" 
                                 data-page="${title.page}"
+                                ${title.checked ? "checked" : ""}
                                 onchange="updateDownloadButton()">
                             <div>
-                                <strong>${title.text}</strong>
+                                <input type='text' data-page="${
+                                  title.page
+                                }" value='${title.text}' id="title-input-${
+                      title.page
+                    }">
                                 <span class="page-number">(Page ${
                                   title.page
-                                })</span>
+                                }) (Merged Page ${Math.ceil(
+                      title.page / mergedPages
+                    )})</span>
                                 <span class="font-size">(Font Size: ${title.fontSize.toFixed(
                                   1
                                 )})</span>
