@@ -24,7 +24,7 @@ Get-ChildItem *.pptx | ForEach-Object { $powerPoint = New-Object -ComObject Powe
 for file in *.pptx; do libreoffice --headless --convert-to pdf "$file"; done
 ```
 
-## Add prefix to every pdf in current directory
+## Add prefix to every pdf name in current directory
 
 ```cmd
 for file in *.pdf; do
