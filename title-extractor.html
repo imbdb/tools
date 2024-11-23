@@ -583,6 +583,7 @@
           results.innerHTML = `<p>Error processing PDF: ${error.message}</p>`;
           console.error("PDF processing error:", error);
         }
+        updateDownloadButton();
       }
 
       setupEventListeners();
