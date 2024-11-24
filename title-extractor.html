@@ -175,7 +175,7 @@
       // function to return base64 of a page of pdf
       async function getPageAsBase64(pdf, pageNum) {
         const page = await pdf.getPage(pageNum);
-        const scale = 0.5;
+        const scale = 1;
         const viewport = page.getViewport({ scale });
 
         const canvas = document.createElement("canvas");
