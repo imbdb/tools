@@ -25,7 +25,7 @@
       }
       .thumbnail-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
         gap: 20px;
         padding: 20px;
       }
@@ -216,12 +216,19 @@
           }
         });
 
+      function changeContainerStyle(container, checkbox) {
+        container.style.opacity = checkbox.checked ? 1 : 0.5;
+        container.style.border = checkbox.checked
+          ? "2px solid green"
+          : "2px solid red";
+      }
+
       async function renderThumbnails() {
         const grid = document.getElementById("thumbnail-grid");
 
         for (let i = 1; i <= pdfDoc.numPages; i++) {
           const page = await pdfDoc.getPage(i);
-          const scale = 0.5;
+          const scale = 1;
           const viewport = page.getViewport({ scale });
 
           const container = document.createElement("div");
@@ -246,8 +253,19 @@
           container.appendChild(canvas);
           container.appendChild(checkbox);
           container.appendChild(pageNumber);
+          checkbox.addEventListener("click", (e) => {
+            e.stopPropagation();
+            console.log("checkbox", e.target.checked);
+            changeContainerStyle(container, checkbox);
+          });
+          container.addEventListener("click", (e) => {
+            e.preventDefault();
+            checkbox.checked = !checkbox.checked;
+            console.log("container", checkbox.checked);
+            changeContainerStyle(container, checkbox);
+          });
           grid.appendChild(container);
-
+          changeContainerStyle(container, checkbox);
           const renderContext = {
             canvasContext: context,
             viewport: viewport,
