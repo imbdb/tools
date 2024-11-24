@@ -13,7 +13,7 @@
     <style>
       body {
         font-family: Arial, sans-serif;
-        max-width: 800px;
+        max-width: 1200px;
         margin: 20px auto;
         padding: 0 20px;
       }
@@ -51,6 +51,11 @@
       }
       .title-entry input[type="checkbox"] {
         margin-right: 10px;
+      }
+      .title-input {
+        width: 100%;
+        padding: 5px;
+        margin-bottom: 5px;
       }
       .page-number {
         color: #666;
@@ -544,39 +549,65 @@
             document.getElementById("mergedpages").value
           );
           // Display results with checkboxes
-          results.innerHTML =
-            allTitles.length > 0
-              ? allTitles
-                  .map(
-                    (title) => `
-                        <div class="title-entry">
-                            <image src="${title.image}" />
-                            <input type="checkbox" 
-                                class="title-checkbox" 
-                                data-title="${title.text}" 
-                                data-page="${title.page}"
-                                ${title.checked ? "checked" : ""}
-                                onchange="updateDownloadButton()">
-                            <div>
-                                <input type='text' data-page="${
-                                  title.page
-                                }" value='${title.text}' id="title-input-${
-                      title.page
-                    }">
-                                <span class="page-number">(Page ${
-                                  title.page
-                                }) (Merged Page ${Math.ceil(
-                      title.page / mergedPages
-                    )})</span>
-                                <span class="font-size">(Font Size: ${title.fontSize.toFixed(
-                                  1
-                                )})</span>
-                            </div>
-                        </div>
-                    `
-                  )
-                  .join("")
-              : "<p>No titles found in the document.</p>";
+          results.innerHTML = "";
+          if (allTitles.length > 0) {
+            allTitles.forEach((title) => {
+              const titleEntry = document.createElement("div");
+              titleEntry.className = "title-entry";
+
+              const image = document.createElement("img");
+              image.src = title.image;
+              titleEntry.appendChild(image);
+
+              const checkbox = document.createElement("input");
+              checkbox.type = "checkbox";
+              checkbox.className = "title-checkbox";
+              checkbox.dataset.title = title.text;
+              checkbox.dataset.page = title.page;
+              checkbox.checked = title.checked;
+
+              titleEntry.appendChild(checkbox);
+
+              const titleDiv = document.createElement("div");
+
+              const titleInput = document.createElement("textarea");
+              titleInput.type = "text";
+              titleInput.dataset.page = title.page;
+              titleInput.value = title.text;
+              titleInput.id = `title-input-${title.page}`;
+              titleInput.className = "title-input";
+              titleDiv.appendChild(titleInput);
+
+              const pageNumber = document.createElement("span");
+              pageNumber.className = "page-number";
+              pageNumber.textContent = `(Page ${
+                title.page
+              }) (Merged Page ${Math.ceil(title.page / mergedPages)})`;
+              titleDiv.appendChild(pageNumber);
+
+              const fontSize = document.createElement("span");
+              fontSize.className = "font-size";
+              fontSize.textContent = `(Font Size: ${title.fontSize.toFixed(
+                1
+              )})`;
+              titleDiv.appendChild(fontSize);
+
+              titleEntry.appendChild(titleDiv);
+              checkbox.addEventListener("change", (e) => {
+                e.stopPropagation();
+                updateDownloadButton();
+                titleEntry.style.opacity = e.target.checked ? 1 : 0.5;
+                titleEntry.style.border = e.target.checked
+                  ? "1px solid green"
+                  : "1px solid red";
+              });
+              results.appendChild(titleEntry);
+            });
+          } else {
+            const noTitlesMessage = document.createElement("p");
+            noTitlesMessage.textContent = "No titles found in the document.";
+            results.appendChild(noTitlesMessage);
+          }
 
           downloadBtn.disabled = true;
         } catch (error) {
