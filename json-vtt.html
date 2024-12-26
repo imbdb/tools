@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JSON to VTT Converter</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      .container {
+        background-color: #f5f5f5;
+        padding: 2rem;
+        border-radius: 8px;
+      }
+      #preview {
+        white-space: pre-wrap;
+        background-color: white;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-top: 1rem;
+        display: none;
+      }
+      button {
+        background-color: #0066cc;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 1rem;
+      }
+      button:hover {
+        background-color: #0052a3;
+      }
+      .error {
+        color: #cc0000;
+        margin-top: 1rem;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>JSON to VTT Converter</h1>
+      <input type="file" id="fileInput" accept=".json" />
+      <div id="error" class="error"></div>
+      <div id="preview"></div>
+      <button id="downloadBtn" style="display: none">Download VTT</button>
+    </div>
+
+    <script>
+      function timeStringToSeconds(timeStr) {
+        const [hours, minutes, seconds] = timeStr.split(":").map(Number);
+        return hours * 3600 + minutes * 60 + seconds;
+      }
+
+      function formatVTTTime(timeStr) {
+        // Handle decimal seconds properly
+        const [timeComponent, decimalPart] = timeStr.split(".");
+        const [hours, minutes, seconds] = timeComponent.split(":").map(Number);
+
+        const formattedHours = String(hours).padStart(2, "0");
+        const formattedMinutes = String(minutes).padStart(2, "0");
+        const formattedSeconds = String(seconds).padStart(2, "0");
+
+        if (decimalPart) {
+          return `${formattedHours}:${formattedMinutes}:${formattedSeconds}.${decimalPart}`;
+        }
+        return `${formattedHours}:${formattedMinutes}:${formattedSeconds}.000`;
+      }
+
+      function convertJSONtoVTT(jsonData) {
+        let vttContent = "WEBVTT\n\n";
+
+        jsonData.forEach((entry, index) => {
+          const currentTime = entry.ts;
+          const nextEntry = jsonData[index + 1];
+          const endTime = nextEntry
+            ? nextEntry.ts
+            : formatVTTTime(timeStringToSeconds(entry.ts) + 5 + ":00:00");
+
+          vttContent += `${index + 1}\n`;
+          vttContent += `${formatVTTTime(currentTime)} --> ${formatVTTTime(
+            endTime
+          )}\n`;
+
+          const usernames = entry.users.map((user) => user.username).join(", ");
+          vttContent += `${usernames}\n\n`;
+        });
+
+        return vttContent;
+      }
+
+      const fileInput = document.getElementById("fileInput");
+      const preview = document.getElementById("preview");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const errorDiv = document.getElementById("error");
+      let vttContent = "";
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const jsonData = JSON.parse(event.target.result);
+            vttContent = convertJSONtoVTT(jsonData);
+            preview.textContent = vttContent;
+            preview.style.display = "block";
+            downloadBtn.style.display = "block";
+            errorDiv.style.display = "none";
+          } catch (error) {
+            errorDiv.textContent = "Error: Invalid JSON file format";
+            errorDiv.style.display = "block";
+            preview.style.display = "none";
+            downloadBtn.style.display = "none";
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      downloadBtn.addEventListener("click", () => {
+        const blob = new Blob([vttContent], { type: "text/vtt" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "subtitles.vtt";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    </script>
+  </body>
+</html>
