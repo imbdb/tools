@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Student Marks Calculator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .subject {
+        border: 1px solid #ccc;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+      }
+      .component {
+        margin: 10px 0;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+      }
+      .eval-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin: 5px 0;
+      }
+      button {
+        padding: 8px 16px;
+        background: #0066cc;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0052a3;
+      }
+      .remove-btn {
+        background: #dc3545;
+      }
+      .remove-btn:hover {
+        background: #c82333;
+      }
+      input {
+        padding: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      .results {
+        font-weight: bold;
+        margin-top: 10px;
+      }
+      .overall-result {
+        background: #28a745;
+        color: white;
+        padding: 15px;
+        border-radius: 4px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Student Marks Calculator</h1>
+
+    <button onclick="addSubject()">Add New Subject</button>
+
+    <div id="subjects-container"></div>
+
+    <div class="overall-result" id="overall-result">Overall Percentage: 0%</div>
+
+    <script>
+      let subjectCounter = 0;
+
+      function addSubject() {
+        subjectCounter++;
+        const container = document.getElementById("subjects-container");
+        const subjectDiv = document.createElement("div");
+        subjectDiv.className = "subject";
+        subjectDiv.id = "subject-" + subjectCounter;
+
+        subjectDiv.innerHTML =
+          '<input type="text" placeholder="Subject Name" onchange="calculateTotal()">' +
+          '<div class="component">' +
+          "<h3>Quizzes (EC1)</h3>" +
+          '<div id="quizzes-' +
+          subjectCounter +
+          '">' +
+          '<div class="eval-group">' +
+          '<input type="number" placeholder="Marks" step="0.01" onchange="calculateTotal()">' +
+          '<input type="number" placeholder="Total" step="0.01" onchange="calculateTotal()">' +
+          "<span>Percentage: 0%</span>" +
+          "</div>" +
+          "</div>" +
+          "<button onclick=\"addEvaluation('quizzes-" +
+          subjectCounter +
+          "')\">Add Quiz</button>" +
+          "</div>" +
+          '<div class="component">' +
+          "<h3>Assignments (EC1)</h3>" +
+          '<div id="assignments-' +
+          subjectCounter +
+          '">' +
+          '<div class="eval-group">' +
+          '<input type="number" placeholder="Marks" step="0.01" onchange="calculateTotal()">' +
+          '<input type="number" placeholder="Total" step="0.01" onchange="calculateTotal()">' +
+          "<span>Percentage: 0%</span>" +
+          "</div>" +
+          "</div>" +
+          "<button onclick=\"addEvaluation('assignments-" +
+          subjectCounter +
+          "')\">Add Assignment</button>" +
+          "</div>" +
+          '<div class="component">' +
+          "<h3>Mid Semester (EC2)</h3>" +
+          '<div class="eval-group mid-sem">' +
+          '<input type="number" placeholder="Marks" step="0.01" onchange="calculateTotal()">' +
+          '<input type="number" placeholder="Total" step="0.01" onchange="calculateTotal()">' +
+          "<span>Percentage: 0%</span>" +
+          "</div>" +
+          "</div>" +
+          '<div class="component">' +
+          "<h3>End Semester (EC3)</h3>" +
+          '<div class="eval-group end-sem">' +
+          '<input type="number" placeholder="Marks" step="0.01" onchange="calculateTotal()">' +
+          '<input type="number" placeholder="Total" step="0.01" onchange="calculateTotal()">' +
+          "<span>Percentage: 0%</span>" +
+          "</div>" +
+          "</div>" +
+          '<div class="results">' +
+          "Subject Total: 0%" +
+          "</div>" +
+          '<button class="remove-btn" onclick="removeSubject(' +
+          subjectCounter +
+          ')">Remove Subject</button>';
+
+        container.appendChild(subjectDiv);
+        calculateTotal();
+      }
+
+      function addEvaluation(containerId) {
+        const container = document.getElementById(containerId);
+        const evalGroup = document.createElement("div");
+        evalGroup.className = "eval-group";
+        evalGroup.innerHTML =
+          '<input type="number" placeholder="Marks" step="0.01" onchange="calculateTotal()">' +
+          '<input type="number" placeholder="Total" step="0.01" onchange="calculateTotal()">' +
+          "<span>Percentage: 0%</span>" +
+          '<button class="remove-btn" onclick="this.parentElement.remove(); calculateTotal()">Remove</button>';
+        container.appendChild(evalGroup);
+      }
+
+      function removeSubject(id) {
+        document.getElementById("subject-" + id).remove();
+        calculateTotal();
+      }
+
+      function calculateTotal() {
+        const subjects = document.getElementsByClassName("subject");
+        let overallTotal = 0;
+        let subjectCount = 0;
+
+        for (let subject of subjects) {
+          let subjectTotal = 0;
+          let componentCount = 0;
+
+          // Calculate EC1 (Quizzes)
+          const quizzes = subject
+            .querySelector('[id^="quizzes-"]')
+            .getElementsByClassName("eval-group");
+          let quizTotal = 0;
+          let validQuizzes = 0;
+
+          for (let quiz of quizzes) {
+            const marks = parseFloat(quiz.children[0].value) || 0;
+            const total = parseFloat(quiz.children[1].value) || 0;
+            if (marks && total) {
+              const percentage = (marks / total) * 100;
+              quiz.children[2].textContent =
+                "Percentage: " + percentage.toFixed(2) + "%";
+              quizTotal += percentage;
+              validQuizzes++;
+            }
+          }
+          if (validQuizzes > 0) {
+            subjectTotal += quizTotal / validQuizzes;
+            componentCount++;
+          }
+
+          // Calculate EC1 (Assignments)
+          const assignments = subject
+            .querySelector('[id^="assignments-"]')
+            .getElementsByClassName("eval-group");
+          let assignTotal = 0;
+          let validAssignments = 0;
+
+          for (let assign of assignments) {
+            const marks = parseFloat(assign.children[0].value) || 0;
+            const total = parseFloat(assign.children[1].value) || 0;
+            if (marks && total) {
+              const percentage = (marks / total) * 100;
+              assign.children[2].textContent =
+                "Percentage: " + percentage.toFixed(2) + "%";
+              assignTotal += percentage;
+              validAssignments++;
+            }
+          }
+          if (validAssignments > 0) {
+            subjectTotal += assignTotal / validAssignments;
+            componentCount++;
+          }
+
+          // Calculate EC2 (Mid Sem)
+          const midSem = subject.querySelector(".mid-sem");
+          const midMarks = parseFloat(midSem.children[0].value) || 0;
+          const midTotal = parseFloat(midSem.children[1].value) || 0;
+          if (midMarks && midTotal) {
+            const midPercentage = (midMarks / midTotal) * 100;
+            midSem.children[2].textContent =
+              "Percentage: " + midPercentage.toFixed(2) + "%";
+            subjectTotal += midPercentage;
+            componentCount++;
+          }
+
+          // Calculate EC3 (End Sem)
+          const endSem = subject.querySelector(".end-sem");
+          const endMarks = parseFloat(endSem.children[0].value) || 0;
+          const endTotal = parseFloat(endSem.children[1].value) || 0;
+          if (endMarks && endTotal) {
+            const endPercentage = (endMarks / endTotal) * 100;
+            endSem.children[2].textContent =
+              "Percentage: " + endPercentage.toFixed(2) + "%";
+            subjectTotal += endPercentage;
+            componentCount++;
+          }
+
+          // Calculate subject total
+          if (componentCount > 0) {
+            const finalSubjectTotal = subjectTotal / componentCount;
+            subject.querySelector(".results").textContent =
+              "Subject Total: " + finalSubjectTotal.toFixed(2) + "%";
+            overallTotal += finalSubjectTotal;
+            subjectCount++;
+          }
+        }
+
+        // Calculate overall percentage
+        const overallPercentage =
+          subjectCount > 0 ? overallTotal / subjectCount : 0;
+        document.getElementById("overall-result").textContent =
+          "Overall Percentage: " + overallPercentage.toFixed(2) + "%";
+      }
+
+      // Add first subject automatically
+      addSubject();
+    </script>
+  </body>
+</html>
