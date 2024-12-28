@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WaveSurfer.js Example</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/wavesurfer.js/dist/wavesurfer.min.css"
+    />
+    <style>
+      #waveform {
+        width: 100%;
+        height: 128px;
+      }
+      /* waveform1 and waveform2 should overlap */
+      .waveform1 {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 128px;
+        z-index: 10;
+      }
+      .waveform2 {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 128px;
+        opacity: 0.5;
+        z-index: 11;
+      }
+      .waveform-container {
+        position: relative;
+        width: 100%;
+        height: 128px;
+        background-color: #ff5959;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Compare 2 video/audio waveform</h2>
+    <div class="waveform-container">
+      <div class="waveform1" id="waveform1"></div>
+      <div class="waveform2" id="waveform2"></div>
+    </div>
+    <br />
+    <input type="file" id="file1-upload" accept="video/*,audio/*" />
+    <input type="file" id="file2-upload" accept="video/*,audio/*" />
+    <br />
+
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <script>
+      var wave1, wave2;
+      document
+        .getElementById("file1-upload")
+        .addEventListener("change", function (event) {
+          wave1.empty();
+          // delete the previous file1 element
+          var file1 = document.querySelector("#file1");
+          if (file1) {
+            file1.remove();
+          }
+          var file = event.target.files[0];
+          // Detect video or audio and generate the appropriate element
+          var isVideo = file.type.indexOf("video") === 0;
+          var element = isVideo ? "video" : "audio";
+          // create the element
+          var mediaElement = document.createElement(element);
+          mediaElement.controls = true;
+          mediaElement.setAttribute("id", "file1");
+          const url = URL.createObjectURL(file);
+          mediaElement.src = url;
+          document.body.appendChild(mediaElement);
+          mediaElement.load();
+
+          wave1.load(url);
+        });
+
+      document
+        .getElementById("file2-upload")
+        .addEventListener("change", function (event) {
+          wave2.empty();
+          // delete the previous file2 element
+          var file2 = document.querySelector("#file2");
+          if (file2) {
+            file2.remove();
+          }
+          var file = event.target.files[0];
+          // Detect video or audio and generate the appropriate element
+          var isVideo = file.type.indexOf("video") === 0;
+          var element = isVideo ? "video" : "audio";
+          // create the element
+          var mediaElement = document.createElement(element);
+          mediaElement.controls = true;
+          mediaElement.setAttribute("id", "file2");
+          const url = URL.createObjectURL(file);
+          mediaElement.src = url;
+          document.body.appendChild(mediaElement);
+          mediaElement.load();
+
+          wave2.load(url);
+        });
+      document.addEventListener("DOMContentLoaded", function () {
+        wave1 = WaveSurfer.create({
+          container: "#waveform1",
+          waveColor: "black",
+          progressColor: "red",
+        });
+
+        wave2 = WaveSurfer.create({
+          container: "#waveform2",
+          waveColor: "white",
+          progressColor: "purple",
+        });
+      });
+    </script>
+  </body>
+</html>
