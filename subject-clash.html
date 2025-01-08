@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exam Schedule Conflict Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="0a60befb-ff78-45f4-934b-f2fc8b1fc27e"
+    ></script>
+  </head>
+  <body class="bg-gray-100 p-4">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
+      <h1 class="text-2xl font-bold mb-6">Exam Schedule Conflict Checker</h1>
+
+      <div class="mb-6">
+        <label class="block text-sm font-medium mb-2"
+          >Select Courses (max 4):</label
+        >
+        <select id="courseSelect" class="w-full p-2 border rounded-md">
+          <option value="">Select a course</option>
+        </select>
+      </div>
+
+      <div id="selectedCourses" class="space-y-4 mb-6"></div>
+
+      <div id="clashes" class="mb-6"></div>
+
+      <div class="text-sm text-gray-500">
+        <p class="font-medium">Legend:</p>
+        <ul class="list-disc pl-4">
+          <li>FN - Fore Noon Exam Session</li>
+          <li>AN - After Noon Exam Session</li>
+          <li>EN - Evening Exam Session</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      const examData = [
+        {
+          id: 433,
+          courseNumber: "SE ZC410",
+          courseName: "MARKETING",
+          midRegular: "21/09/2024 (AN)",
+          midMakeup: "05/10/2024 (AN)",
+          compRegular: "30/11/2024 (AN)",
+          compMakeup: "07/12/2024 (AN)",
+        },
+        {
+          id: 434,
+          courseNumber: "SE ZC420",
+          courseName: "DATA VISUALIZATION/Data Visualization and Communication",
+          midRegular: "20/09/2024 (AN)",
+          midMakeup: "04/10/2024 (AN)",
+          compRegular: "29/11/2024 (AN)",
+          compMakeup: "06/12/2024 (AN)",
+        },
+        {
+          id: 435,
+          courseNumber: "SE ZC425",
+          courseName: "DATA MINING",
+          midRegular: "20/09/2024 (FN)",
+          midMakeup: "04/10/2024 (FN)",
+          compRegular: "29/11/2024 (FN)",
+          compMakeup: "06/12/2024 (FN)",
+        },
+        {
+          id: 436,
+          courseNumber: "SE ZC444",
+          courseName: "ARTIFICIAL INTELLIGENCE",
+          midRegular: "20/09/2024 (AN)",
+          midMakeup: "04/10/2024 (AN)",
+          compRegular: "29/11/2024 (AN)",
+          compMakeup: "06/12/2024 (AN)",
+        },
+        {
+          id: 437,
+          courseNumber: "SE ZG501",
+          courseName: "SOFTWARE QUALITY ASSURANCE AND TESTING",
+          midRegular: "20/09/2024 (AN)",
+          midMakeup: "04/10/2024 (AN)",
+          compRegular: "29/11/2024 (AN)",
+          compMakeup: "06/12/2024 (AN)",
+        },
+        {
+          id: 438,
+          courseNumber: "SE ZG503",
+          courseName: "FULL-STACK APPLICATION DEVELOPMENT",
+          midRegular: "22/09/2024 (FN)",
+          midMakeup: "06/10/2024 (FN)",
+          compRegular: "01/12/2024 (FN)",
+          compMakeup: "08/12/2024 (FN)",
+        },
+        {
+          id: 439,
+          courseNumber: "SE ZG504",
+          courseName: "API-BASED PRODUCTS",
+          midRegular: "20/09/2024 (AN)",
+          midMakeup: "04/10/2024 (AN)",
+          compRegular: "29/11/2024 (AN)",
+          compMakeup: "06/12/2024 (AN)",
+        },
+        {
+          id: 440,
+          courseNumber: "SE ZG505",
+          courseName: "USER EXPERIENCE DESIGN",
+          midRegular: "22/09/2024 (AN)",
+          midMakeup: "06/10/2024 (AN)",
+          compRegular: "01/12/2024 (AN)",
+          compMakeup: "08/12/2024 (AN)",
+        },
+        {
+          id: 441,
+          courseNumber: "SE ZG507",
+          courseName: "PRODUCT DISCOVERY AND REQUIREMENTS ENGINEERING",
+          midRegular: "21/09/2024 (EN)",
+          midMakeup: "05/10/2024 (EN)",
+          compRegular: "30/11/2024 (EN)",
+          compMakeup: "07/12/2024 (EN)",
+        },
+        {
+          id: 442,
+          courseNumber: "SE ZG508",
+          courseName: "PRODUCT STRATEGY AND PLANNING",
+          midRegular: "20/09/2024 (FN)",
+          midMakeup: "04/10/2024 (FN)",
+          compRegular: "29/11/2024 (FN)",
+          compMakeup: "06/12/2024 (FN)",
+        },
+        {
+          id: 443,
+          courseNumber: "SE ZG509",
+          courseName: "Communication, Estimation and Negotiation",
+          midRegular: "20/09/2024 (AN)",
+          midMakeup: "04/10/2024 (AN)",
+          compRegular: "29/11/2024 (AN)",
+          compMakeup: "06/12/2024 (AN)",
+        },
+        {
+          id: 444,
+          courseNumber: "SE ZG510",
+          courseName: "PRODUCT ANALYTICS",
+          midRegular: "22/09/2024 (FN)",
+          midMakeup: "06/10/2024 (FN)",
+          compRegular: "01/12/2024 (FN)",
+          compMakeup: "08/12/2024 (FN)",
+        },
+        {
+          id: 445,
+          courseNumber: "SE ZG512",
+          courseName: "OBJ ORI ANAL & DESIGN",
+          midRegular: "22/09/2024 (FN)",
+          midMakeup: "06/10/2024 (FN)",
+          compRegular: "01/12/2024 (FN)",
+          compMakeup: "08/12/2024 (FN)",
+        },
+        {
+          id: 446,
+          courseNumber: "SE ZG514",
+          courseName: "INTRODUCTION TO DEVOPS",
+          midRegular: "22/09/2024 (EN)",
+          midMakeup: "06/10/2024 (EN)",
+          compRegular: "01/12/2024 (EN)",
+          compMakeup: "08/12/2024 (EN)",
+        },
+        {
+          id: 447,
+          courseNumber: "SE ZG515",
+          courseName: "DATA WAREHOUSING",
+          midRegular: "21/09/2024 (EN)",
+          midMakeup: "05/10/2024 (EN)",
+          compRegular: "30/11/2024 (EN)",
+          compMakeup: "07/12/2024 (EN)",
+        },
+        {
+          id: 448,
+          courseNumber: "SE ZG516",
+          courseName: "EMBEDDED SYSTEM DESIGN",
+          midRegular: "22/09/2024 (AN)",
+          midMakeup: "06/10/2024 (AN)",
+          compRegular: "01/12/2024 (AN)",
+          compMakeup: "08/12/2024 (AN)",
+        },
+        {
+          id: 449,
+          courseNumber: "SE ZG518",
+          courseName: "DATABASE DESIGN & APPLICATIONS",
+          midRegular: "22/09/2024 (AN)",
+          midMakeup: "06/10/2024 (AN)",
+          compRegular: "01/12/2024 (AN)",
+          compMakeup: "08/12/2024 (AN)",
+        },
+        {
+          id: 450,
+          courseNumber: "SE ZG519",
+          courseName: "DATA STRUCTURES & ALGO DESIGN",
+          midRegular: "21/09/2024 (FN)",
+          midMakeup: "05/10/2024 (FN)",
+          compRegular: "30/11/2024 (FN)",
+          compMakeup: "07/12/2024 (FN)",
+        },
+        {
+          id: 451,
+          courseNumber: "SE ZG522",
+          courseName: "BIG DATA SYSTEMS",
+          midRegular: "22/09/2024 (EN)",
+          midMakeup: "06/10/2024 (EN)",
+          compRegular: "01/12/2024 (EN)",
+          compMakeup: "08/12/2024 (EN)",
+        },
+        {
+          id: 452,
+          courseNumber: "SE ZG527",
+          courseName: "CLOUD COMPUTING",
+          midRegular: "22/09/2024 (AN)",
+          midMakeup: "06/10/2024 (AN)",
+          compRegular: "01/12/2024 (AN)",
+          compMakeup: "08/12/2024 (AN)",
+        },
+        {
+          id: 453,
+          courseNumber: "SE ZG528",
+          courseName: "CYBER PHYSICAL SYSTEMS",
+          midRegular: "20/09/2024 (AN)",
+          midMakeup: "04/10/2024 (AN)",
+          compRegular: "29/11/2024 (AN)",
+          compMakeup: "06/12/2024 (AN)",
+        },
+        {
+          id: 454,
+          courseNumber: "SE ZG530",
+          courseName: "DESIGN OF CONVERSATIONAL EXPERIENCES",
+          midRegular: "21/09/2024 (AN)",
+          midMakeup: "05/10/2024 (AN)",
+          compRegular: "30/11/2024 (AN)",
+          compMakeup: "07/12/2024 (AN)",
+        },
+        {
+          id: 455,
+          courseNumber: "SE ZG533",
+          courseName: "SERVICE ORIENTED COMPUTING",
+          midRegular: "20/09/2024 (AN)",
+          midMakeup: "04/10/2024 (AN)",
+          compRegular: "29/11/2024 (AN)",
+          compMakeup: "06/12/2024 (AN)",
+        },
+        {
+          id: 456,
+          courseNumber: "SE ZG544",
+          courseName: "AGILE SOFTWARE PROCESSES",
+          midRegular: "21/09/2024 (AN)",
+          midMakeup: "05/10/2024 (AN)",
+          compRegular: "30/11/2024 (AN)",
+          compMakeup: "07/12/2024 (AN)",
+        },
+        {
+          id: 457,
+          courseNumber: "SE ZG552",
+          courseName: "SOFTWARE TESTING METHODOLOGIES",
+          midRegular: "21/09/2024 (FN)",
+          midMakeup: "05/10/2024 (FN)",
+          compRegular: "30/11/2024 (FN)",
+          compMakeup: "07/12/2024 (FN)",
+        },
+        {
+          id: 458,
+          courseNumber: "SE ZG555",
+          courseName: "DATA VISUALIZATION AND INTERPRETATION",
+          midRegular: "20/09/2024 (FN)",
+          midMakeup: "04/10/2024 (FN)",
+          compRegular: "29/11/2024 (FN)",
+          compMakeup: "06/12/2024 (FN)",
+        },
+        {
+          id: 459,
+          courseNumber: "SE ZG557",
+          courseName: "ARTIFICIAL AND COMPUTATIONAL INTELLIGENCE",
+          midRegular: "22/09/2024 (AN)",
+          midMakeup: "06/10/2024 (AN)",
+          compRegular: "01/12/2024 (AN)",
+          compMakeup: "08/12/2024 (AN)",
+        },
+        {
+          id: 460,
+          courseNumber: "SE ZG566",
+          courseName: "SECURE SOFTWARE ENGINEERING",
+          midRegular: "21/09/2024 (EN)",
+          midMakeup: "05/10/2024 (EN)",
+          compRegular: "30/11/2024 (EN)",
+          compMakeup: "07/12/2024 (EN)",
+        },
+        {
+          id: 461,
+          courseNumber: "SE ZG568",
+          courseName: "APPLIED MACHINE LEARNING",
+          midRegular: "21/09/2024 (AN)",
+          midMakeup: "05/10/2024 (AN)",
+          compRegular: "30/11/2024 (AN)",
+          compMakeup: "07/12/2024 (AN)",
+        },
+        {
+          id: 462,
+          courseNumber: "SE ZG569",
+          courseName: "BLOCKCHAIN TECHNOLOGIES & SYS",
+          midRegular: "22/09/2024 (AN)",
+          midMakeup: "06/10/2024 (AN)",
+          compRegular: "01/12/2024 (AN)",
+          compMakeup: "08/12/2024 (AN)",
+        },
+        {
+          id: 463,
+          courseNumber: "SE ZG583",
+          courseName: "SCALABLE SERVICES",
+          midRegular: "21/09/2024 (FN)",
+          midMakeup: "05/10/2024 (FN)",
+          compRegular: "30/11/2024 (FN)",
+          compMakeup: "07/12/2024 (FN)",
+        },
+        {
+          id: 464,
+          courseNumber: "SE ZG585",
+          courseName: "CROSS PLATFORM APP DEVELOPMENT",
+          midRegular: "20/09/2024 (FN)",
+          midMakeup: "04/10/2024 (FN)",
+          compRegular: "29/11/2024 (FN)",
+          compMakeup: "06/12/2024 (FN)",
+        },
+        {
+          id: 465,
+          courseNumber: "SE ZG586",
+          courseName: "EDGE COMPUTING",
+          midRegular: "22/09/2024 (FN)",
+          midMakeup: "06/10/2024 (FN)",
+          compRegular: "01/12/2024 (FN)",
+          compMakeup: "08/12/2024 (FN)",
+        },
+        {
+          id: 466,
+          courseNumber: "SE ZG587",
+          courseName: "OPEN SOURCE SOFTWARE ENGG",
+          midRegular: "22/09/2024 (FN)",
+          midMakeup: "06/10/2024 (FN)",
+          compRegular: "01/12/2024 (FN)",
+          compMakeup: "08/12/2024 (FN)",
+        },
+        {
+          id: 467,
+          courseNumber: "SE ZG589",
+          courseName: "MIDDLEWARE TECHNOLOGIES",
+          midRegular: "21/09/2024 (AN)",
+          midMakeup: "05/10/2024 (AN)",
+          compRegular: "30/11/2024 (AN)",
+          compMakeup: "07/12/2024 (AN)",
+        },
+        {
+          id: 468,
+          courseNumber: "SE ZG622",
+          courseName: "SOFTWARE PROJECT MANAGEMENT",
+          midRegular: "21/09/2024 (FN)",
+          midMakeup: "05/10/2024 (FN)",
+          compRegular: "30/11/2024 (FN)",
+          compMakeup: "07/12/2024 (FN)",
+        },
+        {
+          id: 469,
+          courseNumber: "SE ZG626",
+          courseName: "HARDWARE SOFTWARE CO DESIGN",
+          midRegular: "20/09/2024 (AN)",
+          midMakeup: "04/10/2024 (AN)",
+          compRegular: "29/11/2024 (AN)",
+          compMakeup: "06/12/2024 (AN)",
+        },
+        {
+          id: 470,
+          courseNumber: "SE ZG651",
+          courseName: "SOFTWARE ARCHITECTURES",
+          midRegular: "21/09/2024 (FN)",
+          midMakeup: "05/10/2024 (FN)",
+          compRegular: "30/11/2024 (FN)",
+          compMakeup: "07/12/2024 (FN)",
+        },
+        {
+          id: 471,
+          courseNumber: "SE ZG661",
+          courseName: "SOFTWARE QUALITY MANAGEMENT",
+          midRegular: "21/09/2024 (EN)",
+          midMakeup: "05/10/2024 (EN)",
+          compRegular: "30/11/2024 (EN)",
+          compMakeup: "07/12/2024 (EN)",
+        },
+        {
+          id: 472,
+          courseNumber: "SE ZG681",
+          courseName: "CYBER SECURITY",
+          midRegular: "22/09/2024 (EN)",
+          midMakeup: "06/10/2024 (EN)",
+          compRegular: "01/12/2024 (EN)",
+          compMakeup: "08/12/2024 (EN)",
+        },
+        {
+          id: 473,
+          courseNumber: "SE ZG685",
+          courseName: "SOFTWARE PRODUCT MANAGEMENT",
+          midRegular: "22/09/2024 (FN)",
+          midMakeup: "06/10/2024 (FN)",
+          compRegular: "01/12/2024 (FN)",
+          compMakeup: "08/12/2024 (FN)",
+        },
+      ];
+
+      let selectedCourses = [];
+
+      // Initialize dropdown options
+      function initializeDropdown() {
+        const select = document.getElementById("courseSelect");
+        examData.forEach((course) => {
+          const option = document.createElement("option");
+          option.value = course.courseNumber;
+          option.textContent = `${course.courseNumber} - ${course.courseName}`;
+          select.appendChild(option);
+        });
+      }
+
+      // Find clashes between selected courses
+      function findClashes() {
+        const clashes = [];
+
+        for (let i = 0; i < selectedCourses.length; i++) {
+          for (let j = i + 1; j < selectedCourses.length; j++) {
+            const course1 = examData.find(
+              (c) => c.courseNumber === selectedCourses[i]
+            );
+            const course2 = examData.find(
+              (c) => c.courseNumber === selectedCourses[j]
+            );
+
+            if (course1 && course2) {
+              if (course1.midRegular === course2.midRegular) {
+                clashes.push(
+                  `${course1.courseName} and ${course2.courseName} have clashing Mid Semester Regular exam on ${course1.midRegular}`
+                );
+              }
+              if (course1.midMakeup === course2.midMakeup) {
+                clashes.push(
+                  `${course1.courseName} and ${course2.courseName} have clashing Mid Semester Makeup exam on ${course1.midMakeup}`
+                );
+              }
+              if (course1.compRegular === course2.compRegular) {
+                clashes.push(
+                  `${course1.courseName} and ${course2.courseName} have clashing Comprehensive Regular exam on ${course1.compRegular}`
+                );
+              }
+              if (course1.compMakeup === course2.compMakeup) {
+                clashes.push(
+                  `${course1.courseName} and ${course2.courseName} have clashing Comprehensive Makeup exam on ${course1.compMakeup}`
+                );
+              }
+            }
+          }
+        }
+        return clashes;
+      }
+
+      // Update the UI with selected courses and clashes
+      function updateUI() {
+        // Update selected courses display
+        const selectedCoursesDiv = document.getElementById("selectedCourses");
+        selectedCoursesDiv.innerHTML = "";
+
+        selectedCourses.forEach((courseNumber) => {
+          const course = examData.find((c) => c.courseNumber === courseNumber);
+          const courseElement = document.createElement("div");
+          courseElement.className = "p-4 bg-gray-50 rounded-md";
+          courseElement.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-medium">${course.courseName}</h4>
+                            <p class="text-sm text-gray-500">${course.courseNumber}</p>
+                        </div>
+                        <button onclick="removeCourse('${course.courseNumber}')" class="text-red-500 hover:text-red-700">
+                            Remove
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-2 text-sm">
+                        <div>
+                            <p class="font-medium">Mid Semester</p>
+                            <p>Regular: ${course.midRegular}</p>
+                            <p>Make-up: ${course.midMakeup}</p>
+                        </div>
+                        <div>
+                            <p class="font-medium">Comprehensive</p>
+                            <p>Regular: ${course.compRegular}</p>
+                            <p>Make-up: ${course.compMakeup}</p>
+                        </div>
+                    </div>
+                `;
+          selectedCoursesDiv.appendChild(courseElement);
+        });
+
+        // Update clashes display
+        const clashesDiv = document.getElementById("clashes");
+        const clashes = findClashes();
+        if (clashes.length > 0) {
+          clashesDiv.innerHTML = `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                        <h3 class="font-bold text-red-800 mb-2">Exam Clashes Found:</h3>
+                        <ul class="list-disc pl-4 text-red-800">
+                            ${clashes
+                              .map((clash) => `<li>${clash}</li>`)
+                              .join("")}
+                        </ul>
+                    </div>
+                `;
+        } else {
+          clashesDiv.innerHTML = "";
+        }
+
+        // Update dropdown disabled states
+        const select = document.getElementById("courseSelect");
+        Array.from(select.options).forEach((option) => {
+          option.disabled =
+            selectedCourses.includes(option.value) && option.value !== "";
+        });
+      }
+
+      // Handle course selection
+      function handleCourseSelection(e) {
+        const value = e.target.value;
+        if (value === "") return;
+
+        if (selectedCourses.includes(value)) {
+          selectedCourses = selectedCourses.filter(
+            (course) => course !== value
+          );
+        } else if (selectedCourses.length < 4) {
+          selectedCourses.push(value);
+        }
+
+        e.target.value = "";
+        updateUI();
+      }
+
+      // Handle course removal
+      function removeCourse(courseNumber) {
+        selectedCourses = selectedCourses.filter(
+          (course) => course !== courseNumber
+        );
+        updateUI();
+      }
+
+      // Initialize the app
+      document.addEventListener("DOMContentLoaded", () => {
+        initializeDropdown();
+        document
+          .getElementById("courseSelect")
+          .addEventListener("change", handleCourseSelection);
+      });
+    </script>
+  </body>
+</html>
