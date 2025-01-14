@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exam Schedule Conflict Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="0a60befb-ff78-45f4-934b-f2fc8b1fc27e"
+    ></script>
+  </head>
+  <body class="bg-gray-100 p-4">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
+      <h1 class="text-2xl font-bold mb-6">Exam Schedule Conflict Checker</h1>
+
+      <div class="mb-6">
+        <label class="block text-sm font-medium mb-2"
+          >Select Courses (max 4):</label
+        >
+        <select id="courseSelect" class="w-full p-2 border rounded-md">
+          <option value="">Select a course</option>
+        </select>
+      </div>
+
+      <div id="selectedCourses" class="space-y-4 mb-6"></div>
+
+      <div id="clashes" class="mb-6"></div>
+
+      <div class="text-sm text-gray-500">
+        <p class="font-medium">Legend:</p>
+        <ul class="list-disc pl-4">
+          <li>FN - Fore Noon Exam Session</li>
+          <li>AN - After Noon Exam Session</li>
+          <li>EN - Evening Exam Session</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      const examData = [
+        {
+          id: 483,
+          courseNumber: "SS ZC416",
+          courseName: "MATH FOUND FOR DATA SCIENCE",
+          midRegular: "23/03/2025 (FN)",
+          midMakeup: "06/04/2025 (FN)",
+          compRegular: "25/05/2025 (FN)",
+          compMakeup: "01/06/2025 (FN)",
+        },
+        {
+          id: 484,
+          courseNumber: "SS ZC425",
+          courseName: "DATA MINING",
+          midRegular: "21/03/2025 (FN)",
+          midMakeup: "04/04/2025 (FN)",
+          compRegular: "23/05/2025 (FN)",
+          compMakeup: "30/05/2025 (FN)",
+        },
+        {
+          id: 485,
+          courseNumber: "SS ZC427",
+          courseName: "SOFTWARE FOR EMBEDDED SYSTEMS",
+          midRegular: "23/03/2025 (EN)",
+          midMakeup: "06/04/2025 (EN)",
+          compRegular: "25/05/2025 (EN)",
+          compMakeup: "01/06/2025 (EN)",
+        },
+        {
+          id: 486,
+          courseNumber: "SS ZC444",
+          courseName: "ARTIFICIAL INTELLIGENCE",
+          midRegular: "21/03/2025 (AN)",
+          midMakeup: "04/04/2025 (AN)",
+          compRegular: "23/05/2025 (AN)",
+          compMakeup: "30/05/2025 (AN)",
+        },
+        {
+          id: 487,
+          courseNumber: "SS ZC447",
+          courseName: "DATA STORAGE TECH & NETWORKS",
+          midRegular: "21/03/2025 (AN)",
+          midMakeup: "04/04/2025 (AN)",
+          compRegular: "23/05/2025 (AN)",
+          compMakeup: "30/05/2025 (AN)",
+        },
+        {
+          id: 488,
+          courseNumber: "SS ZC462",
+          courseName: "NETWORK PROGRAMMING",
+          midRegular: "23/03/2025 (AN)",
+          midMakeup: "06/04/2025 (AN)",
+          compRegular: "25/05/2025 (AN)",
+          compMakeup: "01/06/2025 (AN)",
+        },
+        {
+          id: 489,
+          courseNumber: "SS ZC467",
+          courseName: "COMPUTER NETWORKS",
+          midRegular: "21/03/2025 (FN)",
+          midMakeup: "04/04/2025 (FN)",
+          compRegular: "23/05/2025 (FN)",
+          compMakeup: "30/05/2025 (FN)",
+        },
+        {
+          id: 490,
+          courseNumber: "SS ZG512",
+          courseName: "EMBEDDED SYSTEM DESIGN",
+          midRegular: "23/03/2025 (FN)",
+          midMakeup: "06/04/2025 (FN)",
+          compRegular: "25/05/2025 (FN)",
+          compMakeup: "01/06/2025 (FN)",
+        },
+        {
+          id: 491,
+          courseNumber: "SS ZG513",
+          courseName: "NETWORK SECURITY",
+          midRegular: "21/03/2025 (FN)",
+          midMakeup: "04/04/2025 (FN)",
+          compRegular: "23/05/2025 (FN)",
+          compMakeup: "30/05/2025 (FN)",
+        },
+        {
+          id: 492,
+          courseNumber: "SS ZG514",
+          courseName: "OBJ ORI ANAL & DESIGN",
+          midRegular: "23/03/2025 (FN)",
+          midMakeup: "06/04/2025 (FN)",
+          compRegular: "25/05/2025 (FN)",
+          compMakeup: "01/06/2025 (FN)",
+        },
+        {
+          id: 493,
+          courseNumber: "SS ZG515",
+          courseName: "DATA WAREHOUSING",
+          midRegular: "22/03/2025 (EN)",
+          midMakeup: "05/04/2025 (EN)",
+          compRegular: "24/05/2025 (EN)",
+          compMakeup: "31/05/2025 (EN)",
+        },
+        {
+          id: 494,
+          courseNumber: "SS ZG518",
+          courseName: "DATABASE DESIGN & APPLICATIONS",
+          midRegular: "23/03/2025 (AN)",
+          midMakeup: "06/04/2025 (AN)",
+          compRegular: "25/05/2025 (AN)",
+          compMakeup: "01/06/2025 (AN)",
+        },
+        {
+          id: 495,
+          courseNumber: "SS ZG519",
+          courseName: "DATA STRUCTURES & ALGO DESIGN",
+          midRegular: "22/03/2025 (FN)",
+          midMakeup: "05/04/2025 (FN)",
+          compRegular: "24/05/2025 (FN)",
+          compMakeup: "31/05/2025 (FN)",
+        },
+        {
+          id: 496,
+          courseNumber: "SS ZG520",
+          courseName: "WIRELESS & MOBILE COMMUNICATION",
+          midRegular: "23/03/2025 (FN)",
+          midMakeup: "06/04/2025 (FN)",
+          compRegular: "25/05/2025 (FN)",
+          compMakeup: "01/06/2025 (FN)",
+        },
+        {
+          id: 497,
+          courseNumber: "SS ZG522",
+          courseName: "DESIGN & OPER OF DATA CENTERS",
+          midRegular: "22/03/2025 (AN)",
+          midMakeup: "05/04/2025 (AN)",
+          compRegular: "24/05/2025 (AN)",
+          compMakeup: "31/05/2025 (AN)",
+        },
+        {
+          id: 498,
+          courseNumber: "SS ZG525",
+          courseName: "ADVANCED COMPUTER NETWORKS",
+          midRegular: "21/03/2025 (FN)",
+          midMakeup: "04/04/2025 (FN)",
+          compRegular: "23/05/2025 (FN)",
+          compMakeup: "30/05/2025 (FN)",
+        },
+        {
+          id: 499,
+          courseNumber: "SS ZG526",
+          courseName: "DISTRIBUTED COMPUTING",
+          midRegular: "22/03/2025 (AN)",
+          midMakeup: "05/04/2025 (AN)",
+          compRegular: "24/05/2025 (AN)",
+          compMakeup: "31/05/2025 (AN)",
+        },
+        {
+          id: 500,
+          courseNumber: "SS ZG527",
+          courseName: "CLOUD COMPUTING",
+          midRegular: "21/03/2025 (AN)",
+          midMakeup: "04/04/2025 (AN)",
+          compRegular: "23/05/2025 (AN)",
+          compMakeup: "30/05/2025 (AN)",
+        },
+        {
+          id: 501,
+          courseNumber: "SS ZG528",
+          courseName: "CYBER PHYSICAL SYSTEMS",
+          midRegular: "21/03/2025 (AN)",
+          midMakeup: "04/04/2025 (AN)",
+          compRegular: "23/05/2025 (AN)",
+          compMakeup: "30/05/2025 (AN)",
+        },
+        {
+          id: 502,
+          courseNumber: "SS ZG529",
+          courseName: "DEEP LEARNING",
+          midRegular: "23/03/2025 (AN)",
+          midMakeup: "06/04/2025 (AN)",
+          compRegular: "25/05/2025 (AN)",
+          compMakeup: "01/06/2025 (AN)",
+        },
+        {
+          id: 503,
+          courseNumber: "SS ZG536",
+          courseName: "ADV STAT TECHNIQUES ANALYTICS",
+          midRegular: "21/03/2025 (AN)",
+          midMakeup: "04/04/2025 (AN)",
+          compRegular: "23/05/2025 (AN)",
+          compMakeup: "30/05/2025 (AN)",
+        },
+        {
+          id: 504,
+          courseNumber: "SS ZG537",
+          courseName: "INFORMATION RETRIEVAL",
+          midRegular: "23/03/2025 (EN)",
+          midMakeup: "06/04/2025 (EN)",
+          compRegular: "25/05/2025 (EN)",
+          compMakeup: "01/06/2025 (EN)",
+        },
+        {
+          id: 505,
+          courseNumber: "SS ZG553",
+          courseName: "REAL TIME SYSTEMS",
+          midRegular: "21/03/2025 (FN)",
+          midMakeup: "04/04/2025 (FN)",
+          compRegular: "23/05/2025 (FN)",
+          compMakeup: "30/05/2025 (FN)",
+        },
+        {
+          id: 506,
+          courseNumber: "SS ZG556",
+          courseName: "STREAM PROCESSING AND ANALYTICS",
+          midRegular: "23/03/2025 (EN)",
+          midMakeup: "06/04/2025 (EN)",
+          compRegular: "25/05/2025 (EN)",
+          compMakeup: "01/06/2025 (EN)",
+        },
+        {
+          id: 507,
+          courseNumber: "SS ZG562",
+          courseName: "SOFTWARE ENGG & MANAGEMENT",
+          midRegular: "23/03/2025 (EN)",
+          midMakeup: "06/04/2025 (EN)",
+          compRegular: "25/05/2025 (EN)",
+          compMakeup: "01/06/2025 (EN)",
+        },
+        {
+          id: 508,
+          courseNumber: "SS ZG566",
+          courseName: "SECURE SOFTWARE ENGINEERING",
+          midRegular: "22/03/2025 (EN)",
+          midMakeup: "05/04/2025 (EN)",
+          compRegular: "24/05/2025 (EN)",
+          compMakeup: "31/05/2025 (EN)",
+        },
+        {
+          id: 509,
+          courseNumber: "SS ZG567",
+          courseName: "AI AND ML TECH IN CYBER SECURI",
+          midRegular: "22/03/2025 (AN)",
+          midMakeup: "05/04/2025 (AN)",
+          compRegular: "24/05/2025 (AN)",
+          compMakeup: "31/05/2025 (AN)",
+        },
+        {
+          id: 510,
+          courseNumber: "SS ZG568",
+          courseName: "APPLIED MACHINE LEARNING",
+          midRegular: "22/03/2025 (AN)",
+          midMakeup: "05/04/2025 (AN)",
+          compRegular: "24/05/2025 (AN)",
+          compMakeup: "31/05/2025 (AN)",
+        },
+        {
+          id: 511,
+          courseNumber: "SS ZG569",
+          courseName: "BLOCKCHAIN TECHNOLOGIES & SYS",
+          midRegular: "23/03/2025 (AN)",
+          midMakeup: "06/04/2025 (AN)",
+          compRegular: "25/05/2025 (AN)",
+          compMakeup: "01/06/2025 (AN)",
+        },
+        {
+          id: 512,
+          courseNumber: "SS ZG570",
+          courseName: "CLOUD, IOT & ENTERPRISE SEC",
+          midRegular: "21/03/2025 (AN)",
+          midMakeup: "04/04/2025 (AN)",
+          compRegular: "23/05/2025 (AN)",
+          compMakeup: "30/05/2025 (AN)",
+        },
+        {
+          id: 513,
+          courseNumber: "SS ZG575",
+          courseName: "ETHICAL HACKING",
+          midRegular: "22/03/2025 (AN)",
+          midMakeup: "05/04/2025 (AN)",
+          compRegular: "24/05/2025 (AN)",
+          compMakeup: "31/05/2025 (AN)",
+        },
+        {
+          id: 514,
+          courseNumber: "SS ZG580",
+          courseName: "SOFTWARE DEFINED NETWORKS",
+          midRegular: "22/03/2025 (EN)",
+          midMakeup: "05/04/2025 (EN)",
+          compRegular: "24/05/2025 (EN)",
+          compMakeup: "31/05/2025 (EN)",
+        },
+        {
+          id: 515,
+          courseNumber: "SS ZG584",
+          courseName: "DATA MANAGEMENT FOR IOT",
+          midRegular: "23/03/2025 (AN)",
+          midMakeup: "06/04/2025 (AN)",
+          compRegular: "25/05/2025 (AN)",
+          compMakeup: "01/06/2025 (AN)",
+        },
+        {
+          id: 516,
+          courseNumber: "SS ZG585",
+          courseName: "CROSS PLATFORM APP DEVELOPMENT",
+          midRegular: "21/03/2025 (FN)",
+          midMakeup: "04/04/2025 (FN)",
+          compRegular: "23/05/2025 (FN)",
+          compMakeup: "30/05/2025 (FN)",
+        },
+        {
+          id: 517,
+          courseNumber: "SS ZG586",
+          courseName: "EDGE COMPUTING",
+          midRegular: "23/03/2025 (FN)",
+          midMakeup: "06/04/2025 (FN)",
+          compRegular: "25/05/2025 (FN)",
+          compMakeup: "01/06/2025 (FN)",
+        },
+        {
+          id: 518,
+          courseNumber: "SS ZG588",
+          courseName: "CYBER CRIMES, FORENSICS AND IN",
+          midRegular: "23/03/2025 (FN)",
+          midMakeup: "06/04/2025 (FN)",
+          compRegular: "25/05/2025 (FN)",
+          compMakeup: "01/06/2025 (FN)",
+        },
+        {
+          id: 519,
+          courseNumber: "SS ZG589",
+          courseName: "MIDDLEWARE TECHNOLOGIES",
+          midRegular: "22/03/2025 (AN)",
+          midMakeup: "05/04/2025 (AN)",
+          compRegular: "24/05/2025 (AN)",
+          compMakeup: "31/05/2025 (AN)",
+        },
+        {
+          id: 520,
+          courseNumber: "SS ZG599",
+          courseName: "NATURAL LANGUAGE PROCESSING",
+          midRegular: "22/03/2025 (AN)",
+          midMakeup: "05/04/2025 (AN)",
+          compRegular: "24/05/2025 (AN)",
+          compMakeup: "31/05/2025 (AN)",
+        },
+        {
+          id: 521,
+          courseNumber: "SS ZG626",
+          courseName: "HARDWARE SOFTWARE CO DESIGN",
+          midRegular: "21/03/2025 (AN)",
+          midMakeup: "04/04/2025 (AN)",
+          compRegular: "23/05/2025 (AN)",
+          compMakeup: "30/05/2025 (AN)",
+        },
+        {
+          id: 522,
+          courseNumber: "SS ZG653",
+          courseName: "SOFTWARE ARCHITECTURES",
+          midRegular: "22/03/2025 (FN)",
+          midMakeup: "05/04/2025 (FN)",
+          compRegular: "24/05/2025 (FN)",
+          compMakeup: "31/05/2025 (FN)",
+        },
+        {
+          id: 523,
+          courseNumber: "SS ZG656",
+          courseName: "NETWORK EMBEDDED APPLICATION",
+          midRegular: "22/03/2025 (AN)",
+          midMakeup: "05/04/2025 (AN)",
+          compRegular: "24/05/2025 (AN)",
+          compMakeup: "31/05/2025 (AN)",
+        },
+        {
+          id: 524,
+          courseNumber: "SS ZG661",
+          courseName: "SOFTWARE QUALITY MANAGEMENT",
+          midRegular: "22/03/2025 (EN)",
+          midMakeup: "05/04/2025 (EN)",
+          compRegular: "24/05/2025 (EN)",
+          compMakeup: "31/05/2025 (EN)",
+        },
+        {
+          id: 525,
+          courseNumber: "SS ZG681",
+          courseName: "CYBER SECURITY",
+          midRegular: "23/03/2025 (EN)",
+          midMakeup: "06/04/2025 (EN)",
+          compRegular: "25/05/2025 (EN)",
+          compMakeup: "01/06/2025 (EN)0",
+        },
+        {
+          id: 526,
+          courseNumber: "SS ZG684",
+          courseName: "PARALLEL EMBEDDED ARCHITECTURE",
+          midRegular: "23/03/2025 (AN)",
+          midMakeup: "06/04/2025 (AN)",
+          compRegular: "25/05/2025 (AN)",
+          compMakeup: "01/06/2025 (AN)",
+        },
+      ];
+
+      let selectedCourses = [];
+
+      // Initialize dropdown options
+      function initializeDropdown() {
+        const select = document.getElementById("courseSelect");
+        examData.forEach((course) => {
+          const option = document.createElement("option");
+          option.value = course.courseNumber;
+          option.textContent = `${course.courseNumber} - ${course.courseName}`;
+          select.appendChild(option);
+        });
+      }
+
+      // Find clashes between selected courses
+      function findClashes() {
+        const clashes = [];
+
+        for (let i = 0; i < selectedCourses.length; i++) {
+          for (let j = i + 1; j < selectedCourses.length; j++) {
+            const course1 = examData.find(
+              (c) => c.courseNumber === selectedCourses[i]
+            );
+            const course2 = examData.find(
+              (c) => c.courseNumber === selectedCourses[j]
+            );
+
+            if (course1 && course2) {
+              if (course1.midRegular === course2.midRegular) {
+                clashes.push(
+                  `${course1.courseName} and ${course2.courseName} have clashing Mid Semester Regular exam on ${course1.midRegular}`
+                );
+              }
+              if (course1.midMakeup === course2.midMakeup) {
+                clashes.push(
+                  `${course1.courseName} and ${course2.courseName} have clashing Mid Semester Makeup exam on ${course1.midMakeup}`
+                );
+              }
+              if (course1.compRegular === course2.compRegular) {
+                clashes.push(
+                  `${course1.courseName} and ${course2.courseName} have clashing Comprehensive Regular exam on ${course1.compRegular}`
+                );
+              }
+              if (course1.compMakeup === course2.compMakeup) {
+                clashes.push(
+                  `${course1.courseName} and ${course2.courseName} have clashing Comprehensive Makeup exam on ${course1.compMakeup}`
+                );
+              }
+            }
+          }
+        }
+        return clashes;
+      }
+
+      // Update the UI with selected courses and clashes
+      function updateUI() {
+        // Update selected courses display
+        const selectedCoursesDiv = document.getElementById("selectedCourses");
+        selectedCoursesDiv.innerHTML = "";
+
+        selectedCourses.forEach((courseNumber) => {
+          const course = examData.find((c) => c.courseNumber === courseNumber);
+          const courseElement = document.createElement("div");
+          courseElement.className = "p-4 bg-gray-50 rounded-md";
+          courseElement.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-medium">${course.courseName}</h4>
+                            <p class="text-sm text-gray-500">${course.courseNumber}</p>
+                        </div>
+                        <button onclick="removeCourse('${course.courseNumber}')" class="text-red-500 hover:text-red-700">
+                            Remove
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-2 text-sm">
+                        <div>
+                            <p class="font-medium">Mid Semester</p>
+                            <p>Regular: ${course.midRegular}</p>
+                            <p>Make-up: ${course.midMakeup}</p>
+                        </div>
+                        <div>
+                            <p class="font-medium">Comprehensive</p>
+                            <p>Regular: ${course.compRegular}</p>
+                            <p>Make-up: ${course.compMakeup}</p>
+                        </div>
+                    </div>
+                `;
+          selectedCoursesDiv.appendChild(courseElement);
+        });
+
+        // Update clashes display
+        const clashesDiv = document.getElementById("clashes");
+        const clashes = findClashes();
+        if (clashes.length > 0) {
+          clashesDiv.innerHTML = `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                        <h3 class="font-bold text-red-800 mb-2">Exam Clashes Found:</h3>
+                        <ul class="list-disc pl-4 text-red-800">
+                            ${clashes
+                              .map((clash) => `<li>${clash}</li>`)
+                              .join("")}
+                        </ul>
+                    </div>
+                `;
+        } else {
+          clashesDiv.innerHTML = "";
+        }
+
+        // Update dropdown disabled states
+        const select = document.getElementById("courseSelect");
+        Array.from(select.options).forEach((option) => {
+          option.disabled =
+            selectedCourses.includes(option.value) && option.value !== "";
+        });
+      }
+
+      // Handle course selection
+      function handleCourseSelection(e) {
+        const value = e.target.value;
+        if (value === "") return;
+
+        if (selectedCourses.includes(value)) {
+          selectedCourses = selectedCourses.filter(
+            (course) => course !== value
+          );
+        } else if (selectedCourses.length < 4) {
+          selectedCourses.push(value);
+        }
+
+        e.target.value = "";
+        updateUI();
+      }
+
+      // Handle course removal
+      function removeCourse(courseNumber) {
+        selectedCourses = selectedCourses.filter(
+          (course) => course !== courseNumber
+        );
+        updateUI();
+      }
+
+      // Initialize the app
+      document.addEventListener("DOMContentLoaded", () => {
+        initializeDropdown();
+        document
+          .getElementById("courseSelect")
+          .addEventListener("change", handleCourseSelection);
+      });
+    </script>
+  </body>
+</html>
