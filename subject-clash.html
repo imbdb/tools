@@ -321,6 +321,11 @@
         },
       ];
 
+      const subjectCodeMap = examData.reduce((acc, course) => {
+        acc[course.courseNumber] = course;
+        return acc;
+      }, {});
+
       let selectedCourses = [];
 
       // Initialize dropdown options
@@ -329,7 +334,7 @@
         examData.forEach((course) => {
           const option = document.createElement("option");
           option.value = course.courseNumber;
-          option.textContent = `${course.courseNumber} - ${course.courseName}`;
+          option.textContent = `${course.courseName} - ${course.courseNumber}`;
           select.appendChild(option);
         });
       }
@@ -436,20 +441,31 @@
         });
       }
 
+      function updateUrlHash() {
+        location.hash = selectedCourses.join(",");
+      }
+
+      // Handle course selection
       // Handle course selection
       function handleCourseSelection(e) {
         const value = e.target.value;
         if (value === "") return;
 
+        // If already in selected courses, remove it
         if (selectedCourses.includes(value)) {
           selectedCourses = selectedCourses.filter(
             (course) => course !== value
           );
-        } else if (selectedCourses.length < 4) {
+        }
+        // Else add the course if not at max limit
+        else if (selectedCourses.length < 4) {
           selectedCourses.push(value);
         }
 
         e.target.value = "";
+
+        // Update URL hash
+        updateUrlHash();
         updateUI();
       }
 
@@ -459,14 +475,31 @@
           (course) => course !== courseNumber
         );
         updateUI();
+        updateUrlHash();
       }
 
       // Initialize the app
       document.addEventListener("DOMContentLoaded", () => {
         initializeDropdown();
+
+        // Handle course selection
         document
           .getElementById("courseSelect")
           .addEventListener("change", handleCourseSelection);
+
+        // If URL has a hash, use it to preselect subjects
+        if (location.hash) {
+          // remove the leading '#' and split by ','
+          // decode url encoded values
+          let hashSubjects = location.hash
+            .substring(1)
+            .split(",")
+            .map(decodeURIComponent);
+
+          for (const subject of hashSubjects) {
+            handleCourseSelection({ target: { value: subject } });
+          }
+        }
       });
     </script>
   </body>
