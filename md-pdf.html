@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown to PDF Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #f6f8fa;
+        }
+        
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding: 0;
+        }
+        
+        .editor-section, .preview-section {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        .editor-section {
+            background-color: #f6f8fa;
+            border-right: 1px solid #ddd;
+        }
+        
+        .preview-section {
+            background-color: white;
+        }
+        
+        .markdown-input {
+            width: 100%;
+            height: calc(100vh - 160px);
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            box-sizing: border-box;
+        }
+        
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: #0366d6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button.secondary {
+            background-color: #6c757d;
+        }
+        
+        button.secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        #preview {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+        
+        .preview-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            font-weight: bold;
+            color: #6c757d;
+        }
+        
+        .pdf-options {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .pdf-options h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        
+        .option-group {
+            margin-bottom: 15px;
+        }
+        
+        .option-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .option-group input, .option-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        @media print {
+            .editor-section, .button-group, .pdf-options {
+                display: none;
+            }
+            
+            .container {
+                display: block;
+            }
+            
+            .preview-section {
+                width: 100%;
+                height: auto;
+                overflow: visible;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .preview-title {
+                display: none;
+            }
+            
+            #preview {
+                border: none;
+                padding: 0;
+            }
+        }
+        
+        #pdfPreview {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .sample-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        #previewForPdf {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 210mm; /* A4 width */
+            padding: 20mm; /* Margins */
+            background-color: white;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-section">
+            <h2>Markdown Editor</h2>
+            <div class="sample-buttons">
+                <button class="secondary" onclick="loadSample()">Load Sample UXD Document</button>
+                <button class="secondary" onclick="clearEditor()">Clear Editor</button>
+            </div>
+            <textarea class="markdown-input" id="markdownInput" placeholder="Enter your markdown here..."></textarea>
+            <div class="button-group">
+                <button onclick="renderMarkdown()">Preview Markdown</button>
+                <button onclick="generatePDF()">Generate PDF</button>
+            </div>
+            
+            <div class="pdf-options">
+                <h3>PDF Options</h3>
+                <div class="option-group">
+                    <label for="docTitle">Document Title</label>
+                    <input type="text" id="docTitle" placeholder="Document Title" value="Markdown Document">
+                </div>
+                <div class="option-group">
+                    <label for="pageSize">Page Size</label>
+                    <select id="pageSize">
+                        <option value="a4" selected>A4</option>
+                        <option value="letter">Letter</option>
+                        <option value="legal">Legal</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label for="pageOrientation">Orientation</label>
+                    <select id="pageOrientation">
+                        <option value="portrait" selected>Portrait</option>
+                        <option value="landscape">Landscape</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="preview-section">
+            <div class="preview-title">
+                <h2>Markdown Preview</h2>
+            </div>
+            <div id="preview" class="markdown-body"></div>
+            <div class="loading-indicator" id="loadingIndicator">
+                Generating PDF... This may take a few moments.
+            </div>
+            <iframe id="pdfPreview" frameborder="0"></iframe>
+        </div>
+    </div>
+    
+    <div id="previewForPdf" class="markdown-body"></div>
+    <div class="notification" id="notification">PDF generated successfully!</div>
+    
+    <script>
+        // Initialize libraries
+        const { jsPDF } = window.jspdf;
+        
+        // Default markdown sample
+        const defaultMarkdown = `# Markdown to PDF Converter
+
+## Introduction
+This is a simple tool to convert Markdown to PDF directly in your browser. No server processing is needed!
+
+## Features
+- Live markdown preview
+- PDF export with customizable options
+- Syntax highlighting for code blocks
+- GitHub-style markdown rendering
+
+## How to use
+1. Type or paste your markdown in the editor on the left
+2. View the rendered preview on the right
+3. Adjust the PDF settings as needed
+4. Click "Generate PDF" to create and download your PDF
+
+\`\`\`javascript
+// Example code with syntax highlighting
+function generatePDF() {
+    const markdown = document.getElementById('markdownInput').value;
+    const html = marked.parse(markdown);
+    // Convert to PDF logic
+    console.log("PDF generated!");
+}
+\`\`\`
+
+### Tables are supported too
+
+| Feature | Status |
+|---------|--------|
+| Markdown rendering | ✅ |
+| PDF export | ✅ |
+| Code highlighting | ✅ |
+| Custom styling | ✅ |
+`;
+
+        // Sample UXD Document
+        const sampleUXDDocument = `# Q.3 Travel Booking App Design for Budget-Conscious Explorers
+
+You're involved in designing the new travel booking app for budget-conscious explorers. The app's primary goal is to help users find affordable travel options while offering a seamless booking experience.
+
+## a. Explain how you would use user journey map to identify pain points in the existing application? Draw a sample user journey map and explain in detail. [4 Marks]
+
+A user journey map visually illustrates the steps a user takes to achieve a specific goal with a product or service, along with their experiences, thoughts, and feelings at each stage. To identify pain points in an existing (or a hypothetical existing) budget travel booking application using a user journey map, I would follow these steps:
+
+1. **Define the Scope and User Persona**: First, I would define the specific journey I want to map (e.g., "Finding and booking a budget flight for a weekend getaway") and select a representative user persona for a budget-conscious explorer (e.g., "Aisha, a 24-year-old student who frequently travels on a tight budget").
+
+2. **Outline the User's Stages**: I would then outline the high-level stages the user goes through to complete the journey. For booking budget travel, these stages might include:
+   - **Awareness/Discovery**: The user realizes they want to travel or starts thinking about potential trips.
+   - **Research**: The user starts researching destinations, travel dates, and transportation options (flights, trains, buses).
+   - **Comparison**: The user compares different options based on price, duration, convenience, etc., often across multiple platforms.
+   - **Booking**: The user selects an option and proceeds with the booking process (entering details, payment).
+   - **Confirmation**: The user receives confirmation of their booking.
+   - **Pre-Trip**: Activities before the trip (e.g., packing, checking in online).
+   - **During Trip (Optional)**: Experiences during the travel itself (can be included if relevant to the app's scope, e.g., managing bookings on the go).
+
+3. **Map User Actions, Thoughts, and Feelings**: For each stage, I would map out:
+   - **User Actions**: What specific actions the user takes within the application (or outside it) to move to the next stage.
+   - **User Thoughts**: What the user might be thinking or questioning at each point.
+   - **User Feelings**: What emotions the user might be experiencing (e.g., excitement, frustration, confusion).
+
+4. **Identify Touchpoints**: I would identify all the touchpoints the user has with the application (e.g., specific screens, features, notifications) as well as touchpoints outside the app (e.g., other travel websites, communication with friends).
+
+5. **Pinpoint Pain Points**: The key to identifying pain points is to look for moments in the journey where the user experiences negative emotions (frustration, anxiety, confusion), encounters obstacles, or has unmet needs. These are often indicated by user quotes like those provided ("I always check multiple websites to compare prices before booking," "I'm concerned about fees and hidden charges," "I need a user-friendly app that doesn't overwhelm me with options"). Pain points can also be inferred from actions like abandoning the booking process or expressing dissatisfaction in user research.
+
+6. **Identify Opportunities**: Alongside pain points, the journey map can also highlight opportunities for improvement or for the app to provide additional value to the user.
+
+### Sample User Journey Map (Simplified for Budget Flight Booking):
+
+| Stage | User Actions | User Thoughts | User Feelings | Touchpoints within App | Pain Points / Opportunities |
+|-------|-------------|---------------|---------------|------------------------|----------------------------|
+| **Research** | Opens travel apps, searches for flights (e.g., Delhi to Goa, Nov 24-26) | "Where can I go for a cheap weekend trip?", "Are flights the most affordable option?" | Hopeful, Curious | Search screen, filters | Might need to check multiple apps/websites. Opportunity: Price comparison feature. |
+| **Comparison** | Views search results, filters by price, duration | "Are these the cheapest options?", "Are there hidden fees?", "This looks overwhelming." | Anxious, Confused | Flight results list, sorting/filtering options, flight details screen | Pain Point: Concerned about fees and hidden charges. Overwhelmed by options. Opportunity: Transparent pricing, clear fee breakdown, simplified view. |
+| **Booking** | Selects a flight, enters passenger details | "Is this the right flight?", "Will the price change now?", "This form is long." | Hesitant, Annoyed | Passenger details form | Pain Point: Long and potentially complicated booking forms. Price changes during booking. Opportunity: Streamlined form, price lock guarantee. |
+| **Payment** | Enters payment information | "Is this secure?", "What payment options do they have?" | Worried, Inconvenienced | Payment options screen | Limited payment options. Security concerns. Opportunity: Multiple secure payment options, clear security information. |
+| **Confirmation** | Receives booking confirmation | "Did it go through?", "Where is my e-ticket?" | Relief, Slightly Anxious | Confirmation screen, email | Delay in receiving confirmation or e-ticket. Difficulty finding booking details later. Opportunity: Immediate confirmation, easy access to booking details within the app. |
+
+### Explanation:
+
+This sample user journey map illustrates how a budget-conscious traveler (Aisha) might experience the process of finding and booking a flight using a travel booking app. Each row represents a stage in her journey. By detailing her actions, thoughts, and feelings at each stage, we can clearly identify potential pain points. 
+
+For example, during the "Comparison" stage, Aisha might feel anxious and confused due to a large number of options and concerns about hidden fees. This highlights a pain point that the app could address by offering better filtering, transparent pricing, and a simplified display of options.
+
+Similarly, during the "Booking" stage, a long and complicated form can lead to annoyance, indicating another pain point. This suggests an opportunity to streamline the booking form. The need to check multiple websites to compare prices during the "Research" stage directly points to a potential key feature: a built-in price comparison tool.
+
+By mapping the entire user journey in this way, we gain a holistic understanding of the user experience and can systematically identify areas where the existing (or hypothetical) application is falling short for budget-conscious explorers, providing valuable insights for design improvements.
+
+## b. Perform sample thematic analysis using below given sample data set, justify your decision. [3 Marks]
+
+### Sample Data Set:
+
+**User Interviews:**
+- "I always check multiple websites to compare prices before booking."
+- "I'm concerned about fees and hidden charges."
+- "I need a user-friendly app that doesn't overwhelm me with options."
+
+**User Surveys:**
+- Importance ratings: Price (5/5), convenience (4/5), flexibility (3/5)
+- Features desired: Price comparison, personalized recommendations, offline mode.
+
+### Thematic Analysis:
+
+Thematic analysis is a qualitative research method used to identify, analyze, and interpret patterns (themes) within data. Here's a sample of how I would perform thematic analysis on the provided data and my justification:
+
+#### Steps:
+
+1. **Familiarization**: I would read through the entire data set multiple times to get a general sense of the feedback.
+
+2. **Initial Coding**: I would identify and label significant phrases or ideas in the data as initial codes.
+   - "I always check multiple websites to compare prices before booking." → Code: Price Comparison Behavior
+   - "I'm concerned about fees and hidden charges." → Code: Concern about Hidden Costs
+   - "I need a user-friendly app that doesn't overwhelm me with options." → Codes: Need for User-Friendliness, Avoid Overwhelming Options
+   - Importance ratings: Price (5/5) → Code: High Importance of Price
+   - Importance ratings: convenience (4/5) → Code: Importance of Convenience
+   - Importance ratings: flexibility (3/5) → Code: Moderate Importance of Flexibility
+   - Features desired: Price comparison → Code: Desire for Price Comparison
+   - Features desired: personalized recommendations → Code: Desire for Personalized Recommendations
+   - Features desired: offline mode → Code: Desire for Offline Mode
+
+3. **Searching for Themes**: I would then group the initial codes together based on similarities or relationships to identify potential overarching themes.
+   - **Price Sensitivity and Comparison**: Codes: Price Comparison Behavior, Concern about Hidden Costs, High Importance of Price, Desire for Price Comparison. Potential Theme: Price Consciousness
+   - **Ease of Use and Simplicity**: Codes: Need for User-Friendliness, Avoid Overwhelming Options, Importance of Convenience. Potential Theme: User Experience (Simplicity & Convenience)
+   - **Desired Features**: Codes: Desire for Price Comparison (already covered under Price Consciousness), Desire for Personalized Recommendations, Desire for Offline Mode. Potential Theme: Desired App Features
+
+4. **Reviewing Themes**: I would review the identified themes to ensure they are coherent, meaningful, and representative of the data. The themes seem to capture the key concerns and desires expressed by the users.
+
+5. **Defining and Describing Themes**: I would clearly define and describe each theme.
+   - **Price Consciousness**: Users are highly concerned about the cost of travel and actively compare prices across different platforms. They are also wary of hidden fees and charges.
+   - **User Experience (Simplicity & Convenience)**: Users desire an app that is easy to use and navigate, without being overwhelmed by too many options. Convenience is also a significant factor for them.
+   - **Desired App Features**: Users specifically desire features such as price comparison within the app, personalized recommendations, and the ability to access some functionality offline.
+
+### Justification:
+
+I chose thematic analysis because the data set includes both qualitative (interview quotes) and quantitative (survey ratings and desired features) data. Thematic analysis is primarily a qualitative method, but it can be used to synthesize insights from mixed methods data by identifying common patterns and meanings. The interview quotes provide rich, descriptive information about user experiences and needs, while the survey data offers insights into the importance users place on certain aspects and the specific features they are looking for.
+
+By applying thematic analysis, I can bring together these different types of data to develop a comprehensive understanding of the key themes related to budget-conscious travelers and their needs for a travel booking app. This approach helps in moving beyond surface-level responses to uncover deeper patterns of meaning and inform the design process effectively.
+
+## c. Explain how you would define user needs from the thematic analysis? Identify at least three features from at least 3 user needs for the given scenario. [3 Marks]
+
+Defining user needs from thematic analysis involves translating the identified themes into actionable statements that describe what users require from the product to achieve their goals and address their pain points. Each theme often points to one or more underlying user needs.
+
+Based on the thematic analysis above, the user needs can be defined as follows:
+
+- **Theme: Price Consciousness** translates to the user need: Users need to easily find and compare affordable travel options and be aware of all costs upfront to make informed decisions and stay within their budget.
+
+- **Theme: User Experience (Simplicity & Convenience)** translates to the user need: Users need a travel booking app that is intuitive, easy to navigate, and provides a streamlined experience to efficiently find and book travel without feeling overwhelmed.
+
+- **Theme: Desired App Features** directly highlights user needs for specific functionalities:
+  - Need for Price Comparison: Users need the ability to compare prices from multiple sources within the app.
+  - Need for Personalized Recommendations: Users need suggestions for travel options tailored to their preferences and budget.
+  - Need for Offline Access: Users need access to essential booking information even without an internet connection.
+
+Now, let's identify at least three features aligned with these user needs:
+
+1. **User Need: Users need to easily find and compare affordable travel options and be aware of all costs upfront to make informed decisions and stay within their budget.**
+   - **Feature: Comprehensive Price Comparison Tool**: The app should aggregate flight, accommodation, and other travel option prices from multiple websites and display them in a clear and comparable format. It should allow users to sort and filter based on price and other relevant criteria.
+   - **Feature: Transparent Fee Breakdown**: All potential fees and charges (e.g., baggage fees, booking fees) should be clearly listed and itemized before the final booking stage to avoid surprises.
+
+2. **User Need: Users need a travel booking app that is intuitive, easy to navigate, and provides a streamlined experience to efficiently find and book travel without feeling overwhelmed.**
+   - **Feature: Simplified User Interface**: The app should have a clean and intuitive design with clear navigation and a minimal number of steps required to complete core tasks like searching and booking. Overwhelming options should be progressively disclosed or offered as advanced filters.
+
+3. **User Need: Users need the ability to compare prices from multiple sources within the app.** (This was derived from the "Desired App Features" theme and is closely related to the first user need but focuses on a specific functionality).
+   - **Feature: Price Alert System**: Users should be able to set up alerts for specific destinations and date ranges to be notified when prices drop below a certain threshold.
+
+4. **User Need: Users need suggestions for travel options tailored to their preferences and budget.** (From "Desired App Features").
+   - **Feature: Personalized Recommendation Engine**: Based on user history, saved preferences, and stated budget, the app should offer tailored recommendations for destinations, accommodations, and activities.
+
+5. **User Need: Users need access to essential booking information even without an internet connection.** (From "Desired App Features").
+   - **Feature: Offline Booking Information**: Users should be able to download and access their booking confirmations, itineraries, and essential travel details even when they are offline.
+
+These features directly address the user needs identified through the thematic analysis of the sample data, aiming to create a budget travel booking app that is both affordable and offers a seamless user experience.`;
+
+        window.onload = function() {
+            // Set default markdown in the editor
+            document.getElementById('markdownInput').value = defaultMarkdown;
+            
+            // Configure marked.js with options
+            marked.setOptions({
+                highlight: function(code, lang) {
+                    if (lang && hljs.getLanguage(lang)) {
+                        return hljs.highlight(lang, code).value;
+                    }
+                    return hljs.highlightAuto(code).value;
+                },
+                breaks: true,
+                gfm: true,
+                tables: true
+            });
+            
+            // Initial render
+            renderMarkdown();
+        };
+        
+        function renderMarkdown() {
+            const markdownInput = document.getElementById('markdownInput').value;
+            const preview = document.getElementById('preview');
+            preview.innerHTML = marked.parse(markdownInput);
+            
+            // Apply syntax highlighting to code blocks
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+            
+            // Hide PDF preview if showing
+            document.getElementById('preview').classList.remove('hidden');
+            document.getElementById('pdfPreview').style.display = 'none';
+        }
+        
+        function loadSample() {
+            document.getElementById('markdownInput').value = sampleUXDDocument;
+            renderMarkdown();
+        }
+        
+        function clearEditor() {
+            document.getElementById('markdownInput').value = '';
+            renderMarkdown();
+        }
+        
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        function generatePDF() {
+            const markdownInput = document.getElementById('markdownInput').value;
+            if (!markdownInput.trim()) {
+                showNotification("Please enter some markdown content first.");
+                return;
+            }
+            
+            // Get PDF options
+            const docTitle = document.getElementById('docTitle').value || 'Markdown Document';
+            const pageSize = document.getElementById('pageSize').value;
+            const pageOrientation = document.getElementById('pageOrientation').value;
+            
+            // Show loading indicator
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.style.display = 'block';
+            
+            // Hide preview temporarily
+            document.getElementById('preview').classList.add('hidden');
+            
+            // Prepare the content for PDF
+            const previewForPdf = document.getElementById('previewForPdf');
+            previewForPdf.innerHTML = marked.parse(markdownInput);
+            
+            // Apply syntax highlighting to code blocks in PDF
+            previewForPdf.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+            
+            // Use timeout to allow browser to render before capturing
+            setTimeout(() => {
+                // Create PDF
+                const pdf = new jsPDF({
+                    orientation: pageOrientation,
+                    unit: 'mm',
+                    format: pageSize
+                });
+                
+                // Add title
+                pdf.setFontSize(24);
+                pdf.text(docTitle, 20, 20);
+                
+                const options = {
+                    scale: 0.75,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                };
+                
+                html2canvas(previewForPdf, options).then(canvas => {
+                    // Add content to PDF
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+                    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+                    
+                    let heightLeft = imgHeight;
+                    let position = 30; // Start below the title
+                    
+                    // Add first page
+                    pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+                    heightLeft -= pdfHeight;
+                    
+                    // Add new pages if content overflows
+                    while (heightLeft >= 0) {
+                        position = heightLeft - imgHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+                        heightLeft -= pdfHeight;
+                    }
+                    
+                    // Save PDF
+                    pdf.save(`${docTitle.replace(/\s+/g, '_')}.pdf`);
+                    
+                    // Hide loading indicator
+                    loadingIndicator.style.display = 'none';
+                    
+                    // Restore preview
+                    document.getElementById('preview').classList.remove('hidden');
+                    
+                    // Show success notification
+                    showNotification('PDF generated successfully!');
+                }).catch(error => {
+                    console.error('Error generating PDF:', error);
+                    loadingIndicator.style.display = 'none';
+                    document.getElementById('preview').classList.remove('hidden');
+                    showNotification('Error generating PDF. Please try again.');
+                });
+            }, 500);
+        }
+    </script>
+</body>
+</html>
