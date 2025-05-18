@@ -96,6 +96,16 @@
         background: #f0f0f0;
         border-radius: 4px;
       }
+      .glossary-section {
+        break-before: page;
+        margin-top: 20px;
+      }
+      .letter-header {
+        font-size: 14pt;
+        font-weight: bold;
+        margin: 10px 0;
+        color: #333;
+      }
     </style>
   </head>
   <body>
@@ -152,6 +162,14 @@
       <button id="downloadPdf" class="download-btn" disabled>
         Download Selected Titles
       </button>
+
+      <button id="downloadCsv" class="download-btn" disabled>
+        Download CSV
+      </button>
+
+      <button id="downloadGlossary" class="download-btn" disabled>
+        Download Glossary
+      </button>
     </div>
 
     <div id="results"></div>
@@ -170,11 +188,24 @@
       const downloadBtn = document.getElementById("downloadPdf");
       const selectAllBtn = document.getElementById("selectAll");
       const deselectAllBtn = document.getElementById("deselectAll");
+      const downloadCsvBtn = document.getElementById("downloadCsv");
+      const downloadGlossaryBtn = document.getElementById("downloadGlossary");
 
       function updateDownloadButton() {
         const hasSelectedTitles =
           document.querySelectorAll(".title-checkbox:checked").length > 0;
+        downloadCsvBtn.disabled = !hasSelectedTitles;
         downloadBtn.disabled = !hasSelectedTitles;
+        downloadGlossaryBtn.disabled = !hasSelectedTitles;
+      }
+
+      // Add this helper function after the updateDownloadButton function
+      function makeUrlSafe(text) {
+        return text
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric chars with hyphen
+          .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
       }
 
       // function to return base64 of a page of pdf
@@ -239,6 +270,18 @@
             generateTitlesPDF();
           }
         });
+
+        downloadCsvBtn.addEventListener("click", () => {
+          if (!downloadCsvBtn.disabled) {
+            generateTitlesCSV();
+          }
+        });
+
+        downloadGlossaryBtn.addEventListener("click", () => {
+          if (!downloadGlossaryBtn.disabled) {
+            generateGlossaryPDF();
+          }
+        });
       }
 
       function handleFiles(files) {
@@ -266,13 +309,55 @@
         ];
 
         // Check if title matches any unusable pattern
-        return !unusablePatternsRegex.some((regex) => regex.test(title.trim()));
+        if (unusablePatternsRegex.some((regex) => regex.test(title.trim()))) {
+          return false;
+        }
+
+        if (title.length > 50) {
+          return false;
+        }
+        return true;
       }
 
-      function updateDownloadButton() {
-        const hasSelectedTitles =
-          document.querySelectorAll(".title-checkbox:checked").length > 0;
-        downloadBtn.disabled = !hasSelectedTitles;
+      // function updateDownloadButton() {
+      //   const hasSelectedTitles =
+      //     document.querySelectorAll(".title-checkbox:checked").length > 0;
+      //   downloadBtn.disabled = !hasSelectedTitles;
+      // }
+
+      // function to generate csv of titles
+      async function generateTitlesCSV() {
+        const selectedTitles = [];
+
+        // Collect selected titles
+        document
+          .querySelectorAll(".title-checkbox:checked")
+          .forEach((checkbox) => {
+            const titleText = document.getElementById(
+              `title-input-${checkbox.getAttribute("data-page")}`
+            ).value;
+            const pageName = checkbox.getAttribute("data-page");
+            selectedTitles.push({
+              text: titleText,
+              page: pageName,
+            });
+          });
+
+        let csvContent = selectedTitles.map(
+          (title) => `${title.text}|${title.page}`
+        );
+        csvContent.unshift(`Title|Page`);
+        csvContent = csvContent.join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/psv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.setAttribute("href", url);
+        const safeFileName = makeUrlSafe(
+          document.getElementById("heading").value
+        );
+        a.setAttribute("download", `${safeFileName}.psv`);
+        a.click();
       }
 
       async function generateTitlesPDF() {
@@ -408,10 +493,128 @@
           });
 
           // Save the PDF
-          doc.save("extracted_titles.pdf");
+          const safeFileName = makeUrlSafe(
+            document.getElementById("heading").value
+          );
+          doc.save(`${safeFileName}.pdf`);
         } catch (error) {
           console.error("Error generating PDF:", error);
           alert("Error generating PDF. Please try again.");
+        }
+      }
+
+      async function generateGlossaryPDF() {
+        try {
+          const doc = new jsPDF();
+          const selectedTitles = [];
+          const margin = 20;
+          const pageWidth = doc.internal.pageSize.width;
+          const dotLine = ".".repeat(50);
+          const usableWidth = pageWidth - 2 * margin;
+
+          // Collect and sort titles alphabetically
+          document
+            .querySelectorAll(".title-checkbox:checked")
+            .forEach((checkbox) => {
+              const titleText = document.getElementById(
+                `title-input-${checkbox.getAttribute("data-page")}`
+              ).value;
+              const pageName = checkbox.getAttribute("data-page");
+              selectedTitles.push({
+                text: titleText.trim(),
+                page: Math.ceil(
+                  pageName /
+                    parseInt(document.getElementById("mergedpages").value)
+                ),
+              });
+            });
+
+          // Group by first letter
+          const groupedTitles = selectedTitles
+            .sort((a, b) => a.text.localeCompare(b.text))
+            .reduce((acc, title) => {
+              const firstLetter = title.text.charAt(0).toUpperCase();
+              if (!acc[firstLetter]) acc[firstLetter] = [];
+              acc[firstLetter].push(title);
+              return acc;
+            }, {});
+
+          let yPosition = margin;
+
+          // Add title
+          doc.setFontSize(16);
+          doc.text("Glossary", margin, yPosition);
+          yPosition += 15;
+
+          // Add alphabetical sections
+          Object.keys(groupedTitles)
+            .sort()
+            .forEach((letter) => {
+              if (yPosition > doc.internal.pageSize.height - 40) {
+                doc.addPage();
+                yPosition = margin;
+              }
+
+              // Add letter header
+              doc.setFontSize(14);
+              doc.setFont(undefined, "bold");
+              doc.text(letter, margin, yPosition);
+              yPosition += 10;
+
+              // Add titles under this letter
+              doc.setFontSize(12);
+              doc.setFont(undefined, "normal");
+
+              groupedTitles[letter].forEach((title) => {
+                if (yPosition > doc.internal.pageSize.height - 20) {
+                  doc.addPage();
+                  yPosition = margin;
+                }
+
+                // Calculate text width to position dots and page number
+                const textWidth =
+                  (doc.getStringUnitWidth(title.text) * doc.getFontSize()) /
+                  doc.internal.scaleFactor;
+                const pageNumWidth =
+                  (doc.getStringUnitWidth(title.page.toString()) *
+                    doc.getFontSize()) /
+                  doc.internal.scaleFactor;
+
+                // Draw title
+                doc.text(title.text, margin, yPosition);
+
+                // Draw dots
+                const dotsStart = margin + textWidth + 2;
+                const dotsWidth = usableWidth - textWidth - pageNumWidth - 4;
+                const dots = ".".repeat(
+                  Math.floor(
+                    dotsWidth /
+                      ((doc.getStringUnitWidth(".") * doc.getFontSize()) /
+                        doc.internal.scaleFactor)
+                  )
+                );
+                doc.text(dots, dotsStart, yPosition);
+
+                // Draw page number aligned to the right
+                doc.text(
+                  title.page.toString(),
+                  pageWidth - margin - pageNumWidth,
+                  yPosition
+                );
+
+                yPosition += 8;
+              });
+
+              yPosition += 5;
+            });
+
+          const safeFileName = makeUrlSafe(
+            document.getElementById("heading").value
+          );
+          doc.save(`${safeFileName}-glossary.pdf`);
+        } catch (error) {
+          console.error("Error generating glossary PDF:", error);
+          alert("Error generating glossary PDF. Please try again.");
         }
       }
 
