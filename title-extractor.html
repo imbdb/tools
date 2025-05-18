@@ -544,13 +544,14 @@
           // Add title
           doc.setFontSize(12);
           doc.text(document.getElementById("heading").value, margin, yPosition);
-          yPosition += 10;
+          yPosition += 8; // reduced from 10
 
           // Add alphabetical sections
           Object.keys(groupedTitles)
             .sort()
             .forEach((letter) => {
-              if (yPosition > doc.internal.pageSize.height - 40) {
+              if (yPosition > doc.internal.pageSize.height - 30) {
+                // reduced from 40
                 doc.addPage();
                 yPosition = margin;
               }
@@ -559,14 +560,15 @@
               doc.setFontSize(10);
               doc.setFont(undefined, "bold");
               doc.text(letter, margin, yPosition);
-              yPosition += 8;
+              yPosition += 6; // reduced from 8
 
               // Add titles under this letter
               doc.setFontSize(9);
               doc.setFont(undefined, "normal");
 
               groupedTitles[letter].forEach((title) => {
-                if (yPosition > doc.internal.pageSize.height - 20) {
+                if (yPosition > doc.internal.pageSize.height - 15) {
+                  // reduced from 20
                   doc.addPage();
                   yPosition = margin;
                 }
@@ -602,10 +604,10 @@
                   yPosition
                 );
 
-                yPosition += 8;
+                yPosition += 5; // reduced from 8
               });
 
-              yPosition += 5;
+              yPosition += 3; // reduced from 5
             });
 
           const safeFileName = makeUrlSafe(
