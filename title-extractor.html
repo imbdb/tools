@@ -542,9 +542,9 @@
           let yPosition = margin;
 
           // Add title
-          doc.setFontSize(16);
+          doc.setFontSize(12);
           doc.text(document.getElementById("heading").value, margin, yPosition);
-          yPosition += 15;
+          yPosition += 10;
 
           // Add alphabetical sections
           Object.keys(groupedTitles)
@@ -556,13 +556,13 @@
               }
 
               // Add letter header
-              doc.setFontSize(14);
+              doc.setFontSize(10);
               doc.setFont(undefined, "bold");
               doc.text(letter, margin, yPosition);
-              yPosition += 10;
+              yPosition += 8;
 
               // Add titles under this letter
-              doc.setFontSize(12);
+              doc.setFontSize(9);
               doc.setFont(undefined, "normal");
 
               groupedTitles[letter].forEach((title) => {
