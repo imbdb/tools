@@ -5,24 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Merge PDFs</title>
     <style>
-      /* Simple styling for the file list */
       #fileList {
         list-style: none;
         padding: 0;
         margin: 0 0 10px;
       }
       #fileList li {
-        padding: 10px;
-        margin: 5px 0;
-        background-color: #f0f0f0;
-        border: 1px solid #ddd;
+        padding: 6px 12px;
+        margin: 2px 0;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 3px;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        cursor: move;
+        transition: background-color 0.2s ease;
+        position: relative;
+        color: #212529;
+        font-size: 0.9em;
+      }
+      #fileList li:hover {
+        background-color: #e9ecef;
+      }
+      #fileList li.dragging {
+        opacity: 0.9;
+        background-color: #e9ecef;
+        border: 1px dashed #6c757d;
+        color: #495057;
+      }
+      #fileList li.drag-over::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: #339af0;
+      }
+      #fileList li.drag-over-top::before {
+        top: -2px;
+      }
+      #fileList li.drag-over-bottom::before {
+        bottom: -2px;
       }
       .file-controls {
         display: flex;
-        gap: 5px;
+        gap: 3px;
+      }
+      .file-controls button {
+        padding: 4px 10px;
+        font-size: 0.85em;
+        margin: 0;
+        min-width: auto;
+        touch-action: manipulation;
+      }
+      .mobile-controls {
+        display: none;
+        gap: 3px;
+      }
+      @media (max-width: 768px) or (pointer: coarse) {
+        .mobile-controls {
+          display: flex;
+        }
+        #fileList li {
+          padding: 8px 12px;
+          margin: 4px 0;
+        }
+        .file-controls button {
+          padding: 6px 12px;
+          min-height: 35px;
+        }
+      }
+      .file-name {
+        flex: 1;
+        margin-right: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .drop-placeholder {
+        height: 2px;
+        background-color: #339af0;
+        margin: 0;
+        transition: all 0.2s ease;
+      }
+      #fileList li.selected {
+        background-color: #e7f5ff;
+        border-color: #339af0;
+      }
+      #fileList li.selected:hover {
+        background-color: #d0ebff;
       }
     </style>
     <link
@@ -50,6 +122,7 @@
         "downloadFileName"
       ).value = `merged-${new Date().toISOString()}.pdf`;
       let selectedFiles = [];
+      let selectedIndexes = new Set();
       const backgroundColors = [
         "#b18ea9",
         "#6b8e23",
@@ -72,61 +145,213 @@
         "#c9a3a4",
         "#edc9af",
       ];
+
+      const isTouchDevice = () => {
+        return "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      };
+
       // Handle file input
       document
         .getElementById("pdfFiles")
         .addEventListener("change", function (event) {
-          let i = 0;
-          selectedFiles = Array.from(event.target.files)
+          const newFiles = Array.from(event.target.files)
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((file) => {
-              return { file, color: backgroundColors[i++] };
+              return {
+                file,
+                color:
+                  backgroundColors[
+                    selectedFiles.length % backgroundColors.length
+                  ],
+              };
             });
+          selectedFiles = [...selectedFiles, ...newFiles];
           renderFileList();
         });
 
-      // Render the list of uploaded files with Move Up/Down buttons
       function renderFileList() {
         const fileList = document.getElementById("fileList");
-        fileList.innerHTML = ""; // Clear previous list
+        fileList.innerHTML = "";
 
         selectedFiles.forEach((obj, index) => {
-          const file = obj.file;
           const li = document.createElement("li");
-          li.textContent = file.name;
-          li.style.backgroundColor = obj.color;
+          li.draggable = !isTouchDevice();
+          if (selectedIndexes.has(index)) {
+            li.classList.add("selected");
+          }
 
-          // Create buttons for moving the file up and down
-          const moveUpBtn = document.createElement("button");
-          moveUpBtn.textContent = "Up";
-          moveUpBtn.disabled = index === 0; // Disable "Up" for the first file
-          moveUpBtn.addEventListener("click", () => moveFile(index, -1));
-
-          const moveDownBtn = document.createElement("button");
-          moveDownBtn.textContent = "Down";
-          moveDownBtn.disabled = index === selectedFiles.length - 1; // Disable "Down" for the last file
-          moveDownBtn.addEventListener("click", () => moveFile(index, 1));
+          const fileName = document.createElement("span");
+          fileName.className = "file-name";
+          fileName.textContent = obj.file.name;
+          li.appendChild(fileName);
 
           const controls = document.createElement("div");
           controls.className = "file-controls";
-          controls.appendChild(moveUpBtn);
-          controls.appendChild(moveDownBtn);
 
+          const mobileControls = document.createElement("div");
+          mobileControls.className = "mobile-controls";
+
+          const upBtn = document.createElement("button");
+          upBtn.innerHTML = "↑";
+          upBtn.disabled = index === 0;
+          upBtn.addEventListener("click", () => moveItem(index, -1));
+
+          const downBtn = document.createElement("button");
+          downBtn.innerHTML = "↓";
+          downBtn.disabled = index === selectedFiles.length - 1;
+          downBtn.addEventListener("click", () => moveItem(index, 1));
+
+          mobileControls.appendChild(upBtn);
+          mobileControls.appendChild(downBtn);
+          controls.appendChild(mobileControls);
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.textContent = "Delete";
+          deleteBtn.addEventListener("click", () => {
+            selectedFiles.splice(index, 1);
+            renderFileList();
+          });
+
+          controls.appendChild(deleteBtn);
           li.appendChild(controls);
           fileList.appendChild(li);
+
+          // Add click selection handler
+          li.addEventListener("click", (e) => {
+            if (e.ctrlKey || e.metaKey) {
+              // Toggle selection
+              if (selectedIndexes.has(index)) {
+                selectedIndexes.delete(index);
+              } else {
+                selectedIndexes.add(index);
+              }
+            } else if (e.shiftKey && selectedIndexes.size > 0) {
+              // Range selection
+              const lastSelected = Math.max(...Array.from(selectedIndexes));
+              const start = Math.min(lastSelected, index);
+              const end = Math.max(lastSelected, index);
+              for (let i = start; i <= end; i++) {
+                selectedIndexes.add(i);
+              }
+            } else {
+              // Single selection
+              selectedIndexes.clear();
+              selectedIndexes.add(index);
+            }
+            renderFileList();
+          });
+
+          // Add drag event listeners
+          li.addEventListener("dragstart", (e) => {
+            if (!selectedIndexes.has(index)) {
+              selectedIndexes.clear();
+              selectedIndexes.add(index);
+            }
+            li.classList.add("dragging");
+            // Store all selected indexes
+            e.dataTransfer.setData(
+              "text/plain",
+              JSON.stringify(Array.from(selectedIndexes))
+            );
+          });
+
+          li.addEventListener("dragend", () => {
+            li.classList.remove("dragging");
+            document
+              .querySelectorAll(".drop-placeholder")
+              .forEach((el) => el.remove());
+          });
+
+          li.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const draggingItem = fileList.querySelector(".dragging");
+            if (draggingItem === li) return;
+
+            const rect = li.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const isAbove = e.clientY < midY;
+
+            // Remove existing placeholders
+            document
+              .querySelectorAll(".drop-placeholder")
+              .forEach((el) => el.remove());
+
+            // Create new placeholder
+            const placeholder = document.createElement("div");
+            placeholder.className = "drop-placeholder";
+
+            if (isAbove) {
+              li.parentNode.insertBefore(placeholder, li);
+            } else {
+              li.parentNode.insertBefore(placeholder, li.nextSibling);
+            }
+          });
+
+          li.addEventListener("dragleave", (e) => {
+            if (!e.relatedTarget || !e.relatedTarget.closest("#fileList")) {
+              document
+                .querySelectorAll(".drop-placeholder")
+                .forEach((el) => el.remove());
+            }
+          });
+
+          li.addEventListener("drop", (e) => {
+            e.preventDefault();
+            document
+              .querySelectorAll(".drop-placeholder")
+              .forEach((el) => el.remove());
+
+            const fromIndexes = JSON.parse(
+              e.dataTransfer.getData("text/plain")
+            );
+            const rect = li.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            let toIndex = index;
+
+            if (e.clientY > midY) toIndex++;
+
+            // Sort indexes in reverse order for removal
+            fromIndexes.sort((a, b) => b - a);
+
+            // Remove items from their original positions
+            const itemsToMove = fromIndexes.map((idx) => {
+              const item = selectedFiles[idx];
+              return item;
+            });
+
+            fromIndexes.forEach((idx) => {
+              selectedFiles.splice(idx, 1);
+              if (idx < toIndex) toIndex--;
+            });
+
+            // Insert all items at the new position
+            selectedFiles.splice(toIndex, 0, ...itemsToMove);
+
+            // Update selection to new positions
+            selectedIndexes.clear();
+            for (let i = 0; i < itemsToMove.length; i++) {
+              selectedIndexes.add(toIndex + i);
+            }
+
+            renderFileList();
+          });
         });
       }
 
-      // Function to move files up or down
-      function moveFile(index, direction) {
+      function moveItem(index, direction) {
         const newIndex = index + direction;
         if (newIndex >= 0 && newIndex < selectedFiles.length) {
-          // Swap the files in the selectedFiles array
-          [selectedFiles[index], selectedFiles[newIndex]] = [
-            selectedFiles[newIndex],
-            selectedFiles[index],
-          ];
-          renderFileList(); // Re-render the file list after the swap
+          const item = selectedFiles[index];
+          selectedFiles.splice(index, 1);
+          selectedFiles.splice(newIndex, 0, item);
+
+          // Update selection if item was selected
+          if (selectedIndexes.has(index)) {
+            selectedIndexes.delete(index);
+            selectedIndexes.add(newIndex);
+          }
+
+          renderFileList();
         }
       }
 
