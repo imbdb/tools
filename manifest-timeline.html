@@ -8,7 +8,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0d1117;
       color: #c9d1d9;
       min-height: 100vh;
@@ -21,12 +21,8 @@
       gap: 12px;
       margin-bottom: 24px;
     }
-    header h1 {
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: #f0f6fc;
-    }
-    header .badge {
+    header h1 { font-size: 1.4rem; font-weight: 600; color: #f0f6fc; }
+    .badge {
       font-size: 0.7rem;
       background: #21262d;
       border: 1px solid #30363d;
@@ -47,8 +43,7 @@
       max-width: 560px;
       margin: 0 auto;
     }
-    .upload-zone.drag-over,
-    .upload-zone:hover { border-color: #58a6ff; background: #1c2128; }
+    .upload-zone.drag-over, .upload-zone:hover { border-color: #58a6ff; background: #1c2128; }
     .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
     .upload-zone p { color: #8b949e; margin-bottom: 4px; }
     .upload-zone strong { color: #c9d1d9; }
@@ -62,12 +57,11 @@
       color: #c9d1d9;
       font-size: 0.875rem;
       cursor: pointer;
-      transition: background 0.15s;
     }
     .upload-btn:hover { background: #2d333b; }
     #file-input { display: none; }
 
-    /* ── Summary cards ── */
+    /* ── Summary ── */
     .summary {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -80,24 +74,9 @@
       border-radius: 8px;
       padding: 14px 16px;
     }
-    .stat-card .slabel {
-      font-size: 0.7rem;
-      color: #6e7681;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
-    .stat-card .svalue {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #f0f6fc;
-      line-height: 1;
-    }
-    .stat-card .ssub {
-      font-size: 0.72rem;
-      color: #6e7681;
-      margin-top: 4px;
-    }
+    .stat-card .slabel { font-size: 0.7rem; color: #6e7681; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .stat-card .svalue { font-size: 1.6rem; font-weight: 700; color: #f0f6fc; line-height: 1; }
+    .stat-card .ssub   { font-size: 0.72rem; color: #6e7681; margin-top: 4px; }
 
     /* ── Controls ── */
     .controls {
@@ -107,202 +86,186 @@
       margin-bottom: 14px;
       flex-wrap: wrap;
     }
-    .controls label {
-      font-size: 0.8rem;
-      color: #8b949e;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    input[type=range] {
-      accent-color: #58a6ff;
-      cursor: pointer;
-      width: 120px;
-    }
-    .zoom-label {
-      font-size: 0.8rem;
-      color: #c9d1d9;
-      min-width: 28px;
-    }
+    .controls label { font-size: 0.8rem; color: #8b949e; display: flex; align-items: center; gap: 8px; }
+    input[type=range] { accent-color: #58a6ff; cursor: pointer; width: 120px; }
+    .zoom-label { font-size: 0.8rem; color: #c9d1d9; min-width: 28px; }
 
     /* ── Legend ── */
     .legend {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-      font-size: 0.75rem;
-      color: #8b949e;
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 16px; font-size: 0.75rem; color: #8b949e;
     }
     .legend-item { display: flex; align-items: center; gap: 5px; }
-    .legend-swatch {
-      width: 12px; height: 12px;
-      border-radius: 3px;
-      flex-shrink: 0;
-    }
+    .legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
 
-    /* ── Timeline wrapper ── */
+    /* ── Timeline outer ── */
     .tl-outer {
       background: #161b22;
       border: 1px solid #30363d;
       border-radius: 12px;
       overflow: hidden;
     }
-    .tl-scroll {
-      overflow-x: auto;
-    }
-    .tl-inner {
-      /* min-width set by JS */
-      position: relative;
+
+    /* Grid shared by header + body */
+    .tl-grid {
+      display: grid;
+      grid-template-columns: 62px 1fr 1fr 1fr 210px 160px;
     }
 
-    /* ── Rows ── */
-    .tl-row {
-      display: flex;
-      align-items: stretch;
-      border-bottom: 1px solid #21262d;
-    }
-    .tl-row:last-child { border-bottom: none; }
-
-    .tl-label {
-      width: 110px;
-      min-width: 110px;
-      padding: 0 12px;
-      display: flex;
-      align-items: center;
-      font-size: 0.7rem;
-      color: #6e7681;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      background: #0d1117;
-      border-right: 1px solid #21262d;
+    /* ── Sticky column header ── */
+    .tl-header {
       position: sticky;
-      left: 0;
-      z-index: 5;
+      top: 0;
+      z-index: 20;
+      background: #0d1117;
+      border-bottom: 2px solid #30363d;
     }
+    .col-hdr {
+      padding: 8px 10px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #6e7681;
+      border-right: 1px solid #21262d;
+      text-align: center;
+    }
+    .col-hdr:last-child { border-right: none; }
 
-    .tl-track {
+    /* ── Scrollable body ── */
+    .tl-scroll { overflow-y: auto; max-height: 80vh; }
+
+    /* Body grid (height set by JS) */
+    .tl-body {
       position: relative;
-      flex: 1;
-      height: 42px;
-      overflow: hidden;
-    }
-    .tl-row.ruler .tl-track { height: 36px; background: #0d1117; }
-    .tl-row.speaker .tl-track { height: 50px; }
-
-    /* ── Grid lines ── */
-    .grid-line {
-      position: absolute;
-      top: 0; bottom: 0;
-      width: 1px;
-      background: #21262d;
-      pointer-events: none;
+      /* height set by JS */
     }
 
-    /* ── Ruler ticks ── */
+    /* Each column cell */
+    .tl-cell {
+      position: relative;
+      border-right: 1px solid #21262d;
+      height: 100%;        /* fills the tl-body height */
+    }
+    .tl-cell:last-child { border-right: none; }
+
+    /* ── Time ruler (leftmost column) ── */
+    .time-ruler { background: #0d1117; }
     .ruler-tick {
       position: absolute;
-      top: 0;
+      left: 0; right: 0;
+      height: 1px;
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
+      align-items: center;
+      transform: translateY(-50%);
+      pointer-events: none;
     }
     .ruler-tick-label {
       font-size: 10px;
       color: #6e7681;
-      padding: 4px 0 2px 2px;
+      text-align: right;
+      flex: 1;
+      padding-right: 4px;
       white-space: nowrap;
       line-height: 1;
     }
-    .ruler-tick-bar {
-      width: 1px;
-      height: 8px;
+    .ruler-tick-mark {
+      width: 6px;
+      height: 1px;
       background: #30363d;
+      flex-shrink: 0;
+    }
+
+    /* ── Horizontal grid lines (inside data cells) ── */
+    .h-grid-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 1px;
+      background: #21262d;
+      pointer-events: none;
     }
 
     /* ── Chunk bars ── */
     .chunk-bar {
       position: absolute;
-      top: 7px;
-      height: 28px;
+      left: 4px; right: 4px;
+      min-height: 3px;
       border-radius: 4px;
       cursor: pointer;
-      min-width: 3px;
-      transition: filter 0.1s, opacity 0.1s;
       border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      transition: filter 0.1s;
     }
     .chunk-bar:hover { filter: brightness(1.4); z-index: 2; }
-
-    /* chunk seq number label */
-    .chunk-bar .chunk-label {
+    .chunk-bar .clabel {
       position: absolute;
-      top: 50%;
-      left: 4px;
-      transform: translateY(-50%);
-      font-size: 9px;
-      font-weight: 700;
+      top: 3px; left: 4px;
+      font-size: 9px; font-weight: 700;
       color: rgba(255,255,255,0.75);
       pointer-events: none;
       white-space: nowrap;
-      overflow: hidden;
     }
 
     /* ── Blank frame / gap ── */
     .blank-bar {
       position: absolute;
-      top: 7px;
-      height: 28px;
+      left: 4px; right: 4px;
+      min-height: 3px;
       border-radius: 4px;
       background: repeating-linear-gradient(
-        45deg,
-        #374151 0px, #374151 4px,
-        #1f2937 4px, #1f2937 8px
+        45deg, #374151 0 4px, #1f2937 4px 8px
       );
       border: 1px solid #4b5563;
       cursor: pointer;
-      min-width: 3px;
     }
     .blank-bar:hover { filter: brightness(1.2); }
 
-    /* ── Event markers ── */
+    /* ── Event markers (horizontal lines in events column) ── */
     .ev-marker {
       position: absolute;
-      top: 0; bottom: 0;
-      width: 2px;
-      transform: translateX(-50%);
+      left: 0; right: 0;
+      height: 2px;
+      transform: translateY(-50%);
       cursor: pointer;
       z-index: 1;
     }
     .ev-marker .ev-dot {
       position: absolute;
+      left: 4px;
       top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateY(-50%);
       border-radius: 50%;
       transition: transform 0.1s;
     }
-    .ev-marker:hover .ev-dot { transform: translate(-50%, -50%) scale(1.8); }
+    .ev-marker:hover .ev-dot { transform: translateY(-50%) scale(1.8); }
+    .ev-marker .ev-label {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 9.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      max-width: 188px;
+      pointer-events: none;
+    }
 
-    /* ── Speaker bars ── */
+    /* ── Speaker segments ── */
     .speaker-bar {
       position: absolute;
-      top: 5px;
-      height: 40px;
+      left: 4px; right: 4px;
+      min-height: 3px;
       border-radius: 4px;
       cursor: pointer;
-      min-width: 3px;
       border: 1px solid rgba(255,255,255,0.1);
       overflow: hidden;
+      transition: filter 0.1s;
     }
     .speaker-bar:hover { filter: brightness(1.2); z-index: 2; }
-    .speaker-bar-label {
+    .speaker-bar .spk-label {
       position: absolute;
-      top: 50%;
-      left: 5px;
-      transform: translateY(-50%);
-      font-size: 10px;
-      font-weight: 600;
+      top: 3px; left: 4px;
+      font-size: 9px; font-weight: 600;
       color: rgba(255,255,255,0.9);
       pointer-events: none;
       white-space: nowrap;
@@ -323,22 +286,8 @@
       box-shadow: 0 8px 24px rgba(0,0,0,0.5);
       display: none;
     }
-    .tt-title {
-      font-weight: 600;
-      color: #f0f6fc;
-      font-size: 0.85rem;
-      margin-bottom: 7px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .tt-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
-      color: #6e7681;
-      margin-top: 3px;
-    }
+    .tt-title { font-weight: 600; color: #f0f6fc; font-size: 0.85rem; margin-bottom: 7px; }
+    .tt-row { display: flex; justify-content: space-between; gap: 20px; color: #6e7681; margin-top: 3px; }
     .tt-row .tv { color: #c9d1d9; text-align: right; font-variant-numeric: tabular-nums; }
     .tt-sep { border-top: 1px solid #21262d; margin: 6px 0; }
 
@@ -357,12 +306,12 @@
   <div class="upload-zone" id="drop-zone">
     <div class="icon">📂</div>
     <p>Drop your <strong>manifest.json</strong> here</p>
-    <p style="font-size:0.8rem; margin-top:4px;">or</p>
+    <p style="font-size:0.8rem;margin-top:4px;">or</p>
     <label class="upload-btn">Browse file… <input type="file" id="file-input" accept=".json"></label>
   </div>
 </div>
 
-<!-- Timeline (hidden until file loaded) -->
+<!-- Main view -->
 <div id="main-section" class="hidden">
   <div id="summary" class="summary"></div>
 
@@ -372,14 +321,32 @@
       <input type="range" id="zoom-slider" min="1" max="20" step="0.5" value="1">
       <span class="zoom-label" id="zoom-label">1×</span>
     </label>
-    <span style="font-size:0.75rem;color:#6e7681;">Scroll horizontally to navigate</span>
+    <span style="font-size:0.75rem;color:#6e7681;">Scroll vertically to navigate</span>
   </div>
 
   <div class="legend" id="legend"></div>
 
   <div class="tl-outer">
-    <div class="tl-scroll" id="tl-scroll">
-      <div class="tl-inner" id="tl-inner"></div>
+    <!-- Sticky column headers -->
+    <div class="tl-header tl-grid">
+      <div class="col-hdr" style="text-align:right;padding-right:8px;">⏱ Time</div>
+      <div class="col-hdr">🎵 Audio</div>
+      <div class="col-hdr">🎥 Video</div>
+      <div class="col-hdr">🖥 Screen</div>
+      <div class="col-hdr">Events</div>
+      <div class="col-hdr">Speaker</div>
+    </div>
+
+    <!-- Scrollable body -->
+    <div class="tl-scroll">
+      <div class="tl-body tl-grid" id="tl-body">
+        <div class="tl-cell time-ruler" id="tl-ruler"></div>
+        <div class="tl-cell" id="tl-audio"></div>
+        <div class="tl-cell" id="tl-video"></div>
+        <div class="tl-cell" id="tl-deskshare"></div>
+        <div class="tl-cell" id="tl-events"></div>
+        <div class="tl-cell" id="tl-speaker"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -388,66 +355,39 @@
 
 <script>
 // ── Constants ──────────────────────────────────────────────────────────────
-const STREAM_COLORS = {
-  audio:     '#3b82f6',
-  video:     '#10b981',
-  deskshare: '#f59e0b',
+const STREAM_COLORS = { audio: '#3b82f6', video: '#10b981', deskshare: '#f59e0b' };
+const EVENT_COLORS  = {
+  session_update: '#6b7280', active_speaker: '#a78bfa',
+  sharing_start:  '#22d3ee', sharing_stop:   '#f87171', leave: '#dc2626',
 };
+const SPEAKER_PALETTE = ['#8b5cf6','#ec4899','#f97316','#06b6d4','#84cc16','#eab308','#14b8a6','#f43f5e'];
 
-const EVENT_COLORS = {
-  session_update: '#6b7280',
-  active_speaker: '#a78bfa',
-  sharing_start:  '#22d3ee',
-  sharing_stop:   '#f87171',
-  leave:          '#dc2626',
-};
-
-const SPEAKER_PALETTE = [
-  '#8b5cf6','#ec4899','#f97316','#06b6d4','#84cc16','#eab308','#14b8a6','#f43f5e'
-];
-
-// ── Format helpers ─────────────────────────────────────────────────────────
-function fmtTime(relMs) {
-  if (relMs < 0) relMs = 0;
-  const s = relMs / 1000;
-  const m = Math.floor(s / 60);
-  const rem = (s % 60).toFixed(1);
-  return `${m}:${rem.padStart(4, '0')}`;
+// ── Formatting ─────────────────────────────────────────────────────────────
+function fmtTime(ms) {
+  if (ms < 0) ms = 0;
+  const s = ms / 1000, m = Math.floor(s / 60);
+  return `${m}:${(s % 60).toFixed(1).padStart(4,'0')}`;
 }
-
-function fmtTickTime(relMs) {
-  const s = Math.round(relMs / 1000);
-  const m = Math.floor(s / 60);
-  const rem = s % 60;
-  return `${m}:${String(rem).padStart(2, '0')}`;
+function fmtTick(ms) {
+  const s = Math.round(ms / 1000), m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2,'0')}`;
 }
-
 function fmtBytes(b) {
   if (b < 1024) return `${b} B`;
   if (b < 1048576) return `${(b/1024).toFixed(1)} KB`;
   return `${(b/1048576).toFixed(2)} MB`;
 }
-
 function fmtDuration(ms) {
   if (ms < 1000) return `${ms} ms`;
   if (ms < 60000) return `${(ms/1000).toFixed(2)} s`;
-  const m = Math.floor(ms / 60000);
-  const s = ((ms % 60000) / 1000).toFixed(1);
+  const m = Math.floor(ms/60000), s = ((ms%60000)/1000).toFixed(1);
   return `${m}m ${s}s`;
-}
-
-function fmtFrameRate(frames, ms) {
-  if (!ms) return '—';
-  return `${(frames / (ms / 1000)).toFixed(1)} fps`;
 }
 
 // ── Process manifest ───────────────────────────────────────────────────────
 function processManifest(data) {
-  const entries = data.entries;
-
-  // Find time bounds (ignore zero timestamps)
   let t0 = Infinity, tEnd = -Infinity;
-  for (const e of entries) {
+  for (const e of data.entries) {
     if (e.type === 'chunk') {
       if (e.start_timestamp_ms > 0) t0   = Math.min(t0,   e.start_timestamp_ms);
       if (e.end_timestamp_ms   > 0) tEnd = Math.max(tEnd, e.end_timestamp_ms);
@@ -456,278 +396,227 @@ function processManifest(data) {
       tEnd = Math.max(tEnd, e.provider_timestamp_ms);
     } else if (e.type === 'blank_frame' && e.start_timestamp_ms > 0) {
       t0   = Math.min(t0,   e.start_timestamp_ms);
-      const blankEnd = e.start_timestamp_ms + (e.duration_ms || 0);
-      tEnd = Math.max(tEnd, blankEnd);
+      tEnd = Math.max(tEnd, e.start_timestamp_ms + (e.duration_ms||0));
     }
   }
-
-  const duration = tEnd - t0;
-
-  // Bucket entries
-  const streams = { audio: [], video: [], deskshare: [] };
-  const allEvents = [];
-  const blankFrames = [];
-
-  for (const e of entries) {
-    if (e.type === 'chunk')       streams[e.stream_id]?.push(e);
-    else if (e.type === 'event')  allEvents.push(e);
+  const streams    = { audio: [], video: [], deskshare: [] };
+  const allEvents  = [];
+  const blankFrames= [];
+  for (const e of data.entries) {
+    if      (e.type === 'chunk')       streams[e.stream_id]?.push(e);
+    else if (e.type === 'event')       allEvents.push(e);
     else if (e.type === 'blank_frame') blankFrames.push(e);
   }
 
-  // Assign speaker colors
+  // Speaker colours
   const speakerColorMap = {};
   let ci = 0;
-  const speakerEvents = allEvents
-    .filter(e => e.event_type === 'active_speaker' && e.provider_timestamp_ms > 0)
-    .sort((a, b) => a.provider_timestamp_ms - b.provider_timestamp_ms);
-
-  for (const e of speakerEvents) {
+  for (const e of allEvents.filter(e => e.event_type === 'active_speaker' && e.provider_timestamp_ms > 0)
+                            .sort((a,b) => a.provider_timestamp_ms - b.provider_timestamp_ms)) {
     const name = e.metadata?.user_name || 'Unknown';
     if (!speakerColorMap[name]) speakerColorMap[name] = SPEAKER_PALETTE[ci++ % SPEAKER_PALETTE.length];
   }
 
-  // Build speaker timeline segments
-  // Deduplicate consecutive same-speaker slots
-  const speakerSegments = [];
-  // Map each timestamp → last speaker name at that time
+  // Speaker segments
   const byTime = new Map();
-  for (const e of speakerEvents) {
+  for (const e of allEvents.filter(e => e.event_type === 'active_speaker' && e.provider_timestamp_ms > 0)) {
     byTime.set(e.provider_timestamp_ms, e.metadata?.user_name || 'Unknown');
   }
-  const sortedTs = [...byTime.keys()].sort((a, b) => a - b);
-
-  let lastSpeaker = null, segStart = t0;
+  const sortedTs = [...byTime.keys()].sort((a,b) => a-b);
+  const speakerSegments = [];
+  let lastSpk = null, segStart = t0;
   for (const ts of sortedTs) {
     const spk = byTime.get(ts);
-    if (spk !== lastSpeaker) {
-      if (lastSpeaker) speakerSegments.push({ speaker: lastSpeaker, start: segStart, end: ts });
-      lastSpeaker = spk;
-      segStart = ts;
+    if (spk !== lastSpk) {
+      if (lastSpk) speakerSegments.push({ speaker: lastSpk, start: segStart, end: ts });
+      lastSpk = spk; segStart = ts;
     }
   }
-  if (lastSpeaker) speakerSegments.push({ speaker: lastSpeaker, start: segStart, end: tEnd });
+  if (lastSpk) speakerSegments.push({ speaker: lastSpk, start: segStart, end: tEnd });
 
-  return { t0, tEnd, duration, streams, allEvents, blankFrames, speakerSegments, speakerColorMap };
+  return { t0, tEnd, duration: tEnd - t0, streams, allEvents, blankFrames, speakerSegments, speakerColorMap };
 }
 
-// ── Render summary ─────────────────────────────────────────────────────────
+// ── Summary ────────────────────────────────────────────────────────────────
 function renderSummary(info) {
   const { duration, streams, allEvents, speakerColorMap } = info;
-
-  const audioBytes = streams.audio.reduce((s, c) => s + c.bytes_written, 0);
-  const videoBytes = streams.video.reduce((s, c) => s + c.bytes_written, 0);
-  const deskBytes  = streams.deskshare.reduce((s, c) => s + c.bytes_written, 0);
-  const audioFrames = streams.audio.reduce((s, c) => s + c.frame_count, 0);
-  const videoFrames = streams.video.reduce((s, c) => s + c.frame_count, 0);
-
-  const evCounts = {};
-  for (const e of allEvents) evCounts[e.event_type] = (evCounts[e.event_type] || 0) + 1;
-
+  const aB = streams.audio.reduce((s,c)=>s+c.bytes_written,0);
+  const vB = streams.video.reduce((s,c)=>s+c.bytes_written,0);
+  const dB = streams.deskshare.reduce((s,c)=>s+c.bytes_written,0);
+  const ec = {};
+  for (const e of allEvents) ec[e.event_type] = (ec[e.event_type]||0)+1;
   const cards = [
-    { label: 'Duration',         value: fmtDuration(duration),         sub: `${fmtTickTime(0)} → ${fmtTickTime(duration)}` },
-    { label: 'Audio Chunks',     value: streams.audio.length,           sub: `${fmtBytes(audioBytes)} · ${audioFrames.toLocaleString()} frames` },
-    { label: 'Video Chunks',     value: streams.video.length,           sub: `${fmtBytes(videoBytes)} · ${videoFrames.toLocaleString()} frames` },
-    { label: 'Screen Chunks',    value: streams.deskshare.length,       sub: `${fmtBytes(deskBytes)}` },
-    { label: 'Speakers',         value: Object.keys(speakerColorMap).length, sub: `${evCounts.active_speaker || 0} speaker events` },
-    { label: 'Screen Shares',    value: evCounts.sharing_start || 0,    sub: `${evCounts.sharing_stop || 0} stops` },
+    { label: 'Duration',      value: fmtDuration(duration), sub: `0:00 → ${fmtTick(duration)}` },
+    { label: 'Audio',         value: streams.audio.length,    sub: fmtBytes(aB) },
+    { label: 'Video',         value: streams.video.length,    sub: fmtBytes(vB) },
+    { label: 'Deskshare',     value: streams.deskshare.length,sub: fmtBytes(dB) },
+    { label: 'Speakers',      value: Object.keys(speakerColorMap).length, sub: `${ec.active_speaker||0} events` },
+    { label: 'Screen Shares', value: ec.sharing_start||0, sub: `${ec.sharing_stop||0} stops` },
   ];
-
-  document.getElementById('summary').innerHTML = cards.map(c => `
+  document.getElementById('summary').innerHTML = cards.map(c=>`
     <div class="stat-card">
       <div class="slabel">${c.label}</div>
       <div class="svalue">${c.value}</div>
       <div class="ssub">${c.sub}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-// ── Render legend ──────────────────────────────────────────────────────────
+// ── Legend ─────────────────────────────────────────────────────────────────
 function renderLegend(info) {
   const items = [
-    { label: 'Audio',        color: STREAM_COLORS.audio     },
-    { label: 'Video',        color: STREAM_COLORS.video     },
-    { label: 'Deskshare',    color: STREAM_COLORS.deskshare },
-    { label: 'Video Gap',    color: '#374151', border: '#4b5563' },
-    { label: 'Active Speaker', color: EVENT_COLORS.active_speaker },
-    { label: 'Sharing Start', color: EVENT_COLORS.sharing_start  },
-    { label: 'Sharing Stop',  color: EVENT_COLORS.sharing_stop   },
-    ...Object.entries(info.speakerColorMap).map(([name, color]) => ({ label: name, color, round: true })),
+    { label:'Audio',        color: STREAM_COLORS.audio },
+    { label:'Video',        color: STREAM_COLORS.video },
+    { label:'Deskshare',    color: STREAM_COLORS.deskshare },
+    { label:'Video Gap',    color: '#374151', border: '#4b5563' },
+    { label:'Active Speaker',color: EVENT_COLORS.active_speaker },
+    { label:'Sharing Start',color: EVENT_COLORS.sharing_start },
+    { label:'Sharing Stop', color: EVENT_COLORS.sharing_stop },
+    ...Object.entries(info.speakerColorMap).map(([n,c])=>({ label:n, color:c, round:true })),
   ];
-
-  document.getElementById('legend').innerHTML = items.map(i => `
+  document.getElementById('legend').innerHTML = items.map(i=>`
     <div class="legend-item">
-      <div class="legend-swatch" style="background:${i.color};${i.border ? `border:1px solid ${i.border};` : ''}${i.round ? 'border-radius:50%;' : ''}"></div>
+      <div class="legend-swatch" style="background:${i.color};${i.border?`border:1px solid ${i.border};`:''}${i.round?'border-radius:50%;':''}"></div>
       <span>${i.label}</span>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-// ── Timeline rendering ─────────────────────────────────────────────────────
-let globalInfo = null;
-
-function pct(ts, t0, duration) {
-  return ((ts - t0) / duration * 100).toFixed(5) + '%';
-}
-function wPct(start, end, duration) {
-  return (Math.max(0.15, (end - start) / duration * 100)).toFixed(5) + '%';
-}
+// ── Positioning helpers ────────────────────────────────────────────────────
+function topPct(ts, t0, duration)          { return ((ts-t0)/duration*100).toFixed(5)+'%'; }
+function hPct(startTs, endTs, duration)    { return (Math.max(0.15,(endTs-startTs)/duration*100)).toFixed(5)+'%'; }
 
 function chooseTickInterval(duration) {
-  // Aim for ~8-14 ticks
-  const options = [2000, 5000, 10000, 15000, 30000, 60000, 120000, 300000];
-  for (const ms of options) {
-    if (duration / ms <= 14) return ms;
+  for (const ms of [2000,5000,10000,15000,30000,60000,120000,300000]) {
+    if (duration/ms <= 14) return ms;
   }
   return 300000;
 }
 
-function buildGridLines(ticks, duration) {
-  return ticks.map(t =>
-    `<div class="grid-line" style="left:${(t/duration*100).toFixed(5)}%"></div>`
-  ).join('');
-}
+// ── Render timeline ────────────────────────────────────────────────────────
+let globalInfo = null;
+let baseHeight = 600;
 
 function renderTimeline(info) {
   const { t0, tEnd, duration, streams, allEvents, blankFrames, speakerSegments, speakerColorMap } = info;
-  const tl = document.getElementById('tl-inner');
+
+  baseHeight = Math.max(600, duration / 1000 * 2); // 2px per second
+  const body = document.getElementById('tl-body');
+  body.style.height = baseHeight + 'px';
 
   const tickInterval = chooseTickInterval(duration);
   const ticks = [];
-  for (let t = 0; t <= duration + tickInterval; t += tickInterval) {
-    if (t <= duration + 1) ticks.push(t);
-  }
+  for (let t = 0; t <= duration; t += tickInterval) ticks.push(t);
 
-  const gridLines = buildGridLines(ticks, duration);
+  // horizontal grid lines HTML (reused in each data column)
+  const gridLines = ticks.map(t =>
+    `<div class="h-grid-line" style="top:${(t/duration*100).toFixed(5)}%"></div>`
+  ).join('');
 
-  // ── Ruler ────────────────────────────────────────────────────────
-  const rulerTicks = ticks.map(t => {
-    const leftPct = (t / duration * 100).toFixed(5);
-    return `<div class="ruler-tick" style="left:${leftPct}%">
-      <div class="ruler-tick-label">${fmtTickTime(t)}</div>
-      <div class="ruler-tick-bar"></div>
-    </div>`;
-  }).join('');
+  // ── Ruler ──────────────────────────────────────────────────────────────
+  document.getElementById('tl-ruler').innerHTML = ticks.map(t => `
+    <div class="ruler-tick" style="top:${(t/duration*100).toFixed(5)}%">
+      <span class="ruler-tick-label">${fmtTick(t)}</span>
+      <span class="ruler-tick-mark"></span>
+    </div>`).join('');
 
-  const rulerRow = `
-    <div class="tl-row ruler">
-      <div class="tl-label" style="font-size:9px;letter-spacing:0.08em;">TIME</div>
-      <div class="tl-track">${rulerTicks}</div>
-    </div>`;
-
-  // ── Chunk row factory ─────────────────────────────────────────────
-  function chunkRow(labelHtml, chunks, color, extras = '') {
+  // ── Chunk column factory ───────────────────────────────────────────────
+  function fillChunkCol(elId, chunks, color, extras='') {
     const bars = chunks.map(c => {
       const dur = c.end_timestamp_ms - c.start_timestamp_ms;
-      const attrs = [
-        `data-t="chunk"`,
-        `data-stream="${c.stream_id}"`,
-        `data-seq="${c.chunk_sequence}"`,
-        `data-s="${c.start_timestamp_ms}"`,
-        `data-e="${c.end_timestamp_ms}"`,
-        `data-dur="${dur}"`,
-        `data-frames="${c.frame_count}"`,
-        `data-bytes="${c.bytes_written}"`,
-      ].join(' ');
-      const durPct = (dur / duration * 100).toFixed(3);
-      return `<div class="chunk-bar" style="left:${pct(c.start_timestamp_ms,t0,duration)};width:${wPct(c.start_timestamp_ms,c.end_timestamp_ms,duration)};background:${color};" ${attrs}>
-        ${durPct > 3 ? `<div class="chunk-label">#${c.chunk_sequence}</div>` : ''}
+      const hpc = parseFloat(hPct(c.start_timestamp_ms, c.end_timestamp_ms, duration));
+      return `<div class="chunk-bar"
+        style="top:${topPct(c.start_timestamp_ms,t0,duration)};height:${hPct(c.start_timestamp_ms,c.end_timestamp_ms,duration)};background:${color};"
+        data-t="chunk" data-stream="${c.stream_id}" data-seq="${c.chunk_sequence}"
+        data-s="${c.start_timestamp_ms}" data-e="${c.end_timestamp_ms}"
+        data-dur="${dur}" data-frames="${c.frame_count}" data-bytes="${c.bytes_written}">
+        ${hpc > 1 ? `<div class="clabel">#${c.chunk_sequence}</div>` : ''}
       </div>`;
     }).join('');
-
-    return `<div class="tl-row">
-      <div class="tl-label">${labelHtml}</div>
-      <div class="tl-track">
-        ${gridLines}
-        ${extras}
-        ${bars}
-      </div>
-    </div>`;
+    document.getElementById(elId).innerHTML = gridLines + extras + bars;
   }
 
-  // blank frames (video gaps)
-  const blankBarsHtml = blankFrames.map(b => {
+  // blank frame bars
+  const blankBars = blankFrames.map(b => {
     const end = b.start_timestamp_ms + b.duration_ms;
-    return `<div class="blank-bar" style="left:${pct(b.start_timestamp_ms,t0,duration)};width:${wPct(b.start_timestamp_ms,end,duration)};"
+    return `<div class="blank-bar"
+      style="top:${topPct(b.start_timestamp_ms,t0,duration)};height:${hPct(b.start_timestamp_ms,end,duration)};"
       data-t="blank" data-s="${b.start_timestamp_ms}" data-e="${end}" data-dur="${b.duration_ms}"></div>`;
   }).join('');
 
-  // ── Events row ────────────────────────────────────────────────────
-  const nonSpeakerEvents = allEvents.filter(e => e.event_type !== 'active_speaker' && e.provider_timestamp_ms > 0);
-  const speakerEvRaw     = allEvents.filter(e => e.event_type === 'active_speaker' && e.provider_timestamp_ms > 0);
+  fillChunkCol('tl-audio',     streams.audio,     STREAM_COLORS.audio);
+  fillChunkCol('tl-video',     streams.video,     STREAM_COLORS.video, blankBars);
+  fillChunkCol('tl-deskshare', streams.deskshare, STREAM_COLORS.deskshare);
 
-  const speakerDots = speakerEvRaw.map(e => {
+  // ── Events column ──────────────────────────────────────────────────────
+  const speakerEvs = allEvents.filter(e => e.event_type === 'active_speaker' && e.provider_timestamp_ms > 0);
+  const otherEvs   = allEvents.filter(e => e.event_type !== 'active_speaker' && e.provider_timestamp_ms > 0);
+
+  // Speaker dots (small, no label — too many)
+  const speakerDots = speakerEvs.map(e => {
     const color = speakerColorMap[e.metadata?.user_name] || EVENT_COLORS.active_speaker;
     const ts = e.provider_timestamp_ms;
-    return `<div class="ev-marker" style="left:${pct(ts,t0,duration)};background:${color}18;"
+    return `<div class="ev-marker" style="top:${topPct(ts,t0,duration)};background:${color}18;"
       data-t="event" data-etype="active_speaker" data-ts="${ts}" data-name="${e.metadata?.user_name||''}">
-      <div class="ev-dot" style="background:${color};width:6px;height:6px;"></div>
+      <div class="ev-dot" style="background:${color};width:7px;height:7px;"></div>
     </div>`;
   }).join('');
 
-  const otherDots = nonSpeakerEvents.map(e => {
+  // Other events (larger, with label)
+  const EVENT_LABELS = {
+    session_update: '⚡ session started',
+    sharing_start:  (e) => `▶ ${e.metadata?.user_name||'?'} sharing`,
+    sharing_stop:   '⏹ sharing stopped',
+    leave:          '👋 meeting ended',
+  };
+  const otherDots = otherEvs.map(e => {
     const color = EVENT_COLORS[e.event_type] || '#6b7280';
-    const ts = e.provider_timestamp_ms;
-    const name = e.metadata?.user_name || '';
-    return `<div class="ev-marker" style="left:${pct(ts,t0,duration)};background:${color}25;"
-      data-t="event" data-etype="${e.event_type}" data-ts="${ts}" data-name="${name}">
+    const ts    = e.provider_timestamp_ms;
+    const lbl   = typeof EVENT_LABELS[e.event_type] === 'function'
+                    ? EVENT_LABELS[e.event_type](e)
+                    : (EVENT_LABELS[e.event_type] || e.event_type);
+    return `<div class="ev-marker" style="top:${topPct(ts,t0,duration)};background:${color}30;"
+      data-t="event" data-etype="${e.event_type}" data-ts="${ts}" data-name="${e.metadata?.user_name||''}">
       <div class="ev-dot" style="background:${color};width:10px;height:10px;"></div>
+      <span class="ev-label" style="color:${color};">${lbl}</span>
     </div>`;
   }).join('');
 
-  const eventsRow = `
-    <div class="tl-row">
-      <div class="tl-label">Events</div>
-      <div class="tl-track">
-        ${gridLines}
-        ${speakerDots}
-        ${otherDots}
-      </div>
-    </div>`;
+  document.getElementById('tl-events').innerHTML = gridLines + speakerDots + otherDots;
 
-  // ── Speaker row ───────────────────────────────────────────────────
+  // ── Speaker column ─────────────────────────────────────────────────────
   const speakerBars = speakerSegments.map(seg => {
     const color = speakerColorMap[seg.speaker] || '#6b7280';
-    const segDur = seg.end - seg.start;
-    const wpc = parseFloat(wPct(seg.start, seg.end, duration));
+    const hpc   = parseFloat(hPct(seg.start, seg.end, duration));
+    const dur   = seg.end - seg.start;
     return `<div class="speaker-bar"
-      style="left:${pct(seg.start,t0,duration)};width:${wPct(seg.start,seg.end,duration)};background:${color};"
-      data-t="speaker" data-name="${seg.speaker}" data-s="${seg.start}" data-e="${seg.end}" data-dur="${segDur}">
-      ${wpc > 1.5 ? `<div class="speaker-bar-label">${seg.speaker.split(' ')[0]}</div>` : ''}
+      style="top:${topPct(seg.start,t0,duration)};height:${hPct(seg.start,seg.end,duration)};background:${color};"
+      data-t="speaker" data-name="${seg.speaker}" data-s="${seg.start}" data-e="${seg.end}" data-dur="${dur}">
+      ${hpc > 1.5 ? `<div class="spk-label">${seg.speaker.split(' ')[0]}</div>` : ''}
     </div>`;
   }).join('');
 
-  const speakerRow = `
-    <div class="tl-row speaker">
-      <div class="tl-label">Speaker</div>
-      <div class="tl-track">
-        ${gridLines}
-        ${speakerBars}
-      </div>
-    </div>`;
-
-  tl.innerHTML =
-    rulerRow +
-    chunkRow('🎵&nbsp;Audio',   streams.audio,     STREAM_COLORS.audio) +
-    chunkRow('🎥&nbsp;Video',   streams.video,     STREAM_COLORS.video, blankBarsHtml) +
-    chunkRow('🖥&nbsp;Screen',  streams.deskshare, STREAM_COLORS.deskshare) +
-    eventsRow +
-    speakerRow;
+  document.getElementById('tl-speaker').innerHTML = gridLines + speakerBars;
 }
 
-// ── Tooltip logic ──────────────────────────────────────────────────────────
-const tooltip = document.getElementById('tooltip');
+// ── Zoom ───────────────────────────────────────────────────────────────────
+document.getElementById('zoom-slider').addEventListener('input', function () {
+  const z = parseFloat(this.value);
+  document.getElementById('zoom-label').textContent = z.toFixed(1) + '×';
+  document.getElementById('tl-body').style.height = Math.round(z * baseHeight) + 'px';
+});
 
-function showTip(e, html) {
+// ── Tooltip ────────────────────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+function showTip(ev, html) {
   tooltip.innerHTML = html;
   tooltip.style.display = 'block';
-  moveTip(e);
+  moveTip(ev);
 }
-function moveTip(e) {
+function moveTip(ev) {
   const pad = 12;
-  let x = e.clientX + pad, y = e.clientY - pad;
+  let x = ev.clientX + pad, y = ev.clientY - pad;
   const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
-  if (x + tw > window.innerWidth  - 8) x = e.clientX - tw - pad;
-  if (y + th > window.innerHeight - 8) y = e.clientY - th - pad;
+  if (x + tw > window.innerWidth  - 8) x = ev.clientX - tw - pad;
+  if (y + th > window.innerHeight - 8) y = ev.clientY - th - pad;
   if (y < 8) y = 8;
   tooltip.style.left = x + 'px';
   tooltip.style.top  = y + 'px';
@@ -737,87 +626,71 @@ function hideTip() { tooltip.style.display = 'none'; }
 document.addEventListener('mousemove', ev => {
   const el = ev.target.closest('[data-t]');
   if (!el || !globalInfo) { hideTip(); return; }
-
   const { t0 } = globalInfo;
   const type = el.dataset.t;
   let html = '';
 
   if (type === 'chunk') {
-    const s   = +el.dataset.s, e2 = +el.dataset.e, dur = +el.dataset.dur;
-    const frames = +el.dataset.frames, bytes = +el.dataset.bytes;
+    const s=+el.dataset.s, e=+el.dataset.e, dur=+el.dataset.dur;
     html = `
       <div class="tt-title">📦 ${el.dataset.stream} chunk #${el.dataset.seq}</div>
-      <div class="tt-row"><span>Start</span>   <span class="tv">${fmtTime(s - t0)}</span></div>
-      <div class="tt-row"><span>End</span>     <span class="tv">${fmtTime(e2 - t0)}</span></div>
-      <div class="tt-row"><span>Duration</span><span class="tv">${fmtDuration(dur)}</span></div>
+      <div class="tt-row"><span>Start</span>    <span class="tv">${fmtTime(s-t0)}</span></div>
+      <div class="tt-row"><span>End</span>      <span class="tv">${fmtTime(e-t0)}</span></div>
+      <div class="tt-row"><span>Duration</span> <span class="tv">${fmtDuration(dur)}</span></div>
       <div class="tt-sep"></div>
-      <div class="tt-row"><span>Frames</span>  <span class="tv">${frames.toLocaleString()}</span></div>
-      <div class="tt-row"><span>Frame rate</span><span class="tv">${fmtFrameRate(frames, dur)}</span></div>
-      <div class="tt-row"><span>Size</span>    <span class="tv">${fmtBytes(bytes)}</span></div>`;
+      <div class="tt-row"><span>Frames</span>   <span class="tv">${(+el.dataset.frames).toLocaleString()}</span></div>
+      <div class="tt-row"><span>Size</span>     <span class="tv">${fmtBytes(+el.dataset.bytes)}</span></div>`;
   } else if (type === 'blank') {
-    const s = +el.dataset.s, dur = +el.dataset.dur;
+    const s=+el.dataset.s;
     html = `
       <div class="tt-title">⬛ Video Gap</div>
-      <div class="tt-row"><span>Starts at</span><span class="tv">${fmtTime(s - t0)}</span></div>
-      <div class="tt-row"><span>Duration</span><span class="tv">${fmtDuration(dur)}</span></div>`;
+      <div class="tt-row"><span>Starts at</span><span class="tv">${fmtTime(s-t0)}</span></div>
+      <div class="tt-row"><span>Duration</span> <span class="tv">${fmtDuration(+el.dataset.dur)}</span></div>`;
   } else if (type === 'event') {
-    const ts = +el.dataset.ts, etype = el.dataset.etype, name = el.dataset.name;
-    const color = EVENT_COLORS[etype] || '#6b7280';
+    const ts=+el.dataset.ts, color=EVENT_COLORS[el.dataset.etype]||'#6b7280';
     html = `
-      <div class="tt-title"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};"></span> ${etype.replace(/_/g,' ')}</div>
-      <div class="tt-row"><span>Time</span><span class="tv">${fmtTime(ts - t0)}</span></div>
-      ${name ? `<div class="tt-row"><span>User</span><span class="tv">${name}</span></div>` : ''}`;
+      <div class="tt-title"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:5px;"></span>${el.dataset.etype.replace(/_/g,' ')}</div>
+      <div class="tt-row"><span>Time</span><span class="tv">${fmtTime(ts-t0)}</span></div>
+      ${el.dataset.name ? `<div class="tt-row"><span>User</span><span class="tv">${el.dataset.name}</span></div>` : ''}`;
   } else if (type === 'speaker') {
-    const s = +el.dataset.s, e2 = +el.dataset.e, dur = +el.dataset.dur;
-    const color = globalInfo.speakerColorMap[el.dataset.name] || '#6b7280';
+    const s=+el.dataset.s, e=+el.dataset.e, color=globalInfo.speakerColorMap[el.dataset.name]||'#6b7280';
     html = `
-      <div class="tt-title"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};"></span> ${el.dataset.name}</div>
-      <div class="tt-row"><span>Start</span>   <span class="tv">${fmtTime(s - t0)}</span></div>
-      <div class="tt-row"><span>End</span>     <span class="tv">${fmtTime(e2 - t0)}</span></div>
-      <div class="tt-row"><span>Duration</span><span class="tv">${fmtDuration(dur)}</span></div>`;
+      <div class="tt-title"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:5px;"></span>${el.dataset.name}</div>
+      <div class="tt-row"><span>Start</span>   <span class="tv">${fmtTime(s-t0)}</span></div>
+      <div class="tt-row"><span>End</span>     <span class="tv">${fmtTime(e-t0)}</span></div>
+      <div class="tt-row"><span>Duration</span><span class="tv">${fmtDuration(+el.dataset.dur)}</span></div>`;
   }
 
-  if (html) { showTip(ev, html); moveTip(ev); }
-  else hideTip();
+  if (html) showTip(ev, html); else hideTip();
 });
 document.addEventListener('mouseleave', hideTip);
 
-// ── Zoom ───────────────────────────────────────────────────────────────────
-document.getElementById('zoom-slider').addEventListener('input', function () {
-  const z = parseFloat(this.value);
-  document.getElementById('zoom-label').textContent = z.toFixed(1) + '×';
-  document.getElementById('tl-inner').style.minWidth = (z * 100) + '%';
-});
-
-// ── File handling ──────────────────────────────────────────────────────────
+// ── Load file ──────────────────────────────────────────────────────────────
 function handleFile(file) {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      if (!data.entries || !Array.isArray(data.entries)) {
-        throw new Error('No "entries" array found in JSON');
-      }
+      if (!Array.isArray(data.entries)) throw new Error('"entries" array not found');
       globalInfo = processManifest(data);
       document.getElementById('upload-section').style.display = 'none';
       document.getElementById('main-section').classList.remove('hidden');
+      // Reset zoom
+      document.getElementById('zoom-slider').value = '1';
+      document.getElementById('zoom-label').textContent = '1×';
       renderSummary(globalInfo);
       renderLegend(globalInfo);
       renderTimeline(globalInfo);
-    } catch (err) {
-      alert('⚠️ Failed to parse manifest: ' + err.message);
-    }
+    } catch (err) { alert('⚠️ ' + err.message); }
   };
   reader.readAsText(file);
 }
 
 const dropZone  = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
-
 dropZone.addEventListener('click', e => { if (!e.target.closest('.upload-btn')) fileInput.click(); });
 fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
-
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
