@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manifest → VTT Converter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 600; color: #f0f6fc; }
+    .badge {
+      font-size: 0.7rem;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 99px;
+      padding: 2px 10px;
+      color: #8b949e;
+    }
+
+    /* ── Upload ── */
+    .upload-zone {
+      border: 2px dashed #30363d;
+      border-radius: 12px;
+      padding: 64px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #161b22;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .upload-zone.drag-over, .upload-zone:hover { border-color: #58a6ff; background: #1c2128; }
+    .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+    .upload-zone p { color: #8b949e; margin-bottom: 4px; }
+    .upload-zone strong { color: #c9d1d9; }
+    .upload-btn {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 8px 20px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .upload-btn:hover { background: #2d333b; }
+    #file-input { display: none; }
+
+    /* ── File info bar ── */
+    .file-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .file-bar .fname { font-size: 0.85rem; color: #f0f6fc; font-weight: 500; }
+    .file-bar .fmeta { font-size: 0.75rem; color: #6e7681; }
+    .reset-btn {
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 5px;
+      color: #8b949e;
+      cursor: pointer;
+    }
+    .reset-btn:hover { color: #c9d1d9; border-color: #8b949e; }
+
+    /* ── Options ── */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .option-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .option-card h3 {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6e7681;
+      margin-bottom: 12px;
+    }
+    .opt-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+      color: #c9d1d9;
+    }
+    .opt-row:last-child { margin-bottom: 0; }
+    .range-row { flex-direction: column; align-items: flex-start; gap: 5px; }
+    .range-controls { display: flex; align-items: center; gap: 8px; }
+    .range-val { font-size: 0.8rem; color: #58a6ff; min-width: 38px; font-variant-numeric: tabular-nums; }
+    .opt-hint { font-size: 0.68rem; color: #6e7681; line-height: 1.4; }
+
+    input[type=range] { accent-color: #58a6ff; cursor: pointer; width: 110px; }
+    select {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 5px;
+      color: #c9d1d9;
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    select:focus { outline: none; border-color: #58a6ff; }
+
+    /* ── Event legend ── */
+    .ev-legend {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+    .ev-legend h3 {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6e7681;
+      margin-bottom: 10px;
+    }
+    .ev-legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 6px 20px;
+    }
+    .ev-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: #8b949e;
+    }
+    .ev-row .tag {
+      font-family: monospace;
+      font-size: 0.7rem;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 1px 6px;
+      white-space: nowrap;
+      color: #79c0ff;
+      flex-shrink: 0;
+    }
+
+    /* ── Stats ── */
+    .stats-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 99px;
+      padding: 4px 12px;
+      font-size: 0.75rem;
+      color: #8b949e;
+    }
+    .stat-pill strong { color: #f0f6fc; }
+
+    /* ── Preview ── */
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .preview-header span { font-size: 0.8rem; color: #8b949e; }
+    .cue-count {
+      background: #21262d;
+      border-radius: 99px;
+      padding: 2px 10px;
+      color: #58a6ff;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    #vtt-preview {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: #e6edf3;
+      height: 400px;
+      overflow-y: auto;
+      white-space: pre;
+      margin-bottom: 16px;
+    }
+    .vtt-hdr  { color: #f78166; font-weight: bold; }
+    .vtt-meta { color: #3d444d; font-style: italic; }
+    .vtt-id   { color: #3d444d; }
+    .vtt-ts   { color: #79c0ff; }
+    .vtt-arr  { color: #6e7681; }
+    .vtt-kind-speaker            { color: #a5d6ff; }
+    .vtt-kind-sharing            { color: #ffa657; }
+    .vtt-kind-sharing-start      { color: #56d364; }
+    .vtt-kind-sharing-stop       { color: #f85149; }
+    .vtt-kind-active-speaker-raw { color: #c9a0ff; }
+    .vtt-kind-session            { color: #d2a8ff; }
+    .vtt-kind-leave              { color: #f85149; }
+    .vtt-kind-chunk-audio        { color: #58a6ff; }
+    .vtt-kind-chunk-video        { color: #3fb950; }
+    .vtt-kind-chunk-deskshare    { color: #e3b341; }
+    .vtt-kind-blank              { color: #6e7681; }
+    .vtt-kind-unknown            { color: #8b949e; }
+
+    /* ── Actions ── */
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      background: #238636;
+      border: 1px solid #2ea043;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .dl-btn:hover { background: #2ea043; }
+    .dl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: #2d333b; }
+
+    .vlc-hint {
+      margin-top: 20px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-left: 3px solid #58a6ff;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      color: #8b949e;
+      line-height: 1.6;
+    }
+    .vlc-hint strong { color: #c9d1d9; }
+    .vlc-hint code {
+      background: #21262d;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #79c0ff;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🗒 Manifest → VTT</h1>
+  <span class="badge">Zoom RTMS</span>
+</header>
+
+<!-- Step 1: Upload -->
+<div id="upload-section">
+  <div class="upload-zone" id="drop-zone">
+    <div class="icon">📂</div>
+    <p>Drop your <strong>manifest.json</strong> here</p>
+    <p style="font-size:0.8rem;margin-top:4px;">or</p>
+    <label class="upload-btn">Browse file… <input type="file" id="file-input" accept=".json"></label>
+  </div>
+</div>
+
+<!-- Step 2: Convert -->
+<div id="convert-section" class="hidden">
+
+  <div class="file-bar">
+    <div>
+      <div class="fname" id="fname">—</div>
+      <div class="fmeta" id="fmeta">—</div>
+    </div>
+    <button class="reset-btn" id="reset-btn">↩ Load different file</button>
+  </div>
+
+  <!-- Options -->
+  <div class="options-grid">
+    <div class="option-card">
+      <h3>Speaker Settings</h3>
+      <div class="opt-row range-row">
+        <span>Min. segment duration</span>
+        <div class="range-controls">
+          <input type="range" id="min-dur" min="0" max="10000" step="500" value="2000">
+          <span class="range-val" id="min-dur-label">2.0 s</span>
+        </div>
+        <span class="opt-hint">Rapid back-and-forth switches shorter than this are merged into the previous segment</span>
+      </div>
+      <div class="opt-row" style="margin-top:10px;">
+        <span>Name format</span>
+        <select id="name-format">
+          <option value="emoji">🎙 Name</option>
+          <option value="plain">Name</option>
+          <option value="speaking">Speaking: Name</option>
+          <option value="arrow">▶ Name</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="option-card">
+      <h3>Event Flash Duration</h3>
+      <div class="opt-row range-row">
+        <span>Point-event display time</span>
+        <div class="range-controls">
+          <input type="range" id="flash-dur" min="1000" max="10000" step="500" value="4000">
+          <span class="range-val" id="flash-dur-label">4.0 s</span>
+        </div>
+        <span class="opt-hint">How long session_update, sharing_start, sharing_stop, and leave events stay visible on screen</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- What gets included -->
+  <div class="ev-legend">
+    <h3>All events included in output</h3>
+    <div class="ev-legend-grid">
+      <div class="ev-row"><span class="tag" style="color:#d2a8ff;">session_update</span><span>⚡ flash at 0:00</span></div>
+      <div class="ev-row"><span class="tag" style="color:#a5d6ff;">active_speaker (seg)</span><span>🎙 continuous segment per speaker stretch</span></div>
+      <div class="ev-row"><span class="tag" style="color:#c9a0ff;">active_speaker (raw)</span><span>🎤 flash per individual event</span></div>
+      <div class="ev-row"><span class="tag" style="color:#56d364;">sharing_start</span><span>▶ flash at event time</span></div>
+      <div class="ev-row"><span class="tag" style="color:#f85149;">sharing_stop</span><span>⏹ flash at event time</span></div>
+      <div class="ev-row"><span class="tag" style="color:#ffa657;">sharing (banner)</span><span>🖥 continuous while screen is shared</span></div>
+      <div class="ev-row"><span class="tag" style="color:#f85149;">leave</span><span>👋 flash at recording end</span></div>
+      <div class="ev-row"><span class="tag" style="color:#58a6ff;">chunk · audio</span><span>🎵 spans full chunk start→end</span></div>
+      <div class="ev-row"><span class="tag" style="color:#3fb950;">chunk · video</span><span>🎥 spans full chunk start→end</span></div>
+      <div class="ev-row"><span class="tag" style="color:#e3b341;">chunk · deskshare</span><span>🖥 spans full chunk start→end</span></div>
+      <div class="ev-row"><span class="tag" style="color:#6e7681;">blank_frame</span><span>⬛ video gap duration</span></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row"></div>
+
+  <!-- Preview -->
+  <div class="preview-header">
+    <span>VTT Preview</span>
+    <span class="cue-count" id="cue-count">0 cues</span>
+  </div>
+  <pre id="vtt-preview"></pre>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="dl-btn" id="dl-btn">⬇ Download .vtt</button>
+    <button class="copy-btn" id="copy-btn">📋 Copy to clipboard</button>
+  </div>
+
+  <div class="vlc-hint">
+    <strong>How to use in VLC:</strong><br>
+    Open your video → <code>Subtitle</code> menu → <code>Add Subtitle File…</code> → select the <code>.vtt</code> file.<br>
+    Tip: place the <code>.vtt</code> next to the video with the same base filename — VLC loads it automatically.
+  </div>
+
+</div>
+
+<script>
+// ── VTT helpers ────────────────────────────────────────────────────────────
+function fmtVtt(ms) {
+  ms = Math.max(0, Math.round(ms));
+  const h   = Math.floor(ms / 3600000);
+  const m   = Math.floor((ms % 3600000) / 60000);
+  const s   = Math.floor((ms % 60000) / 1000);
+  const ms3 = ms % 1000;
+  return `${pad2(h)}:${pad2(m)}:${pad2(s)}.${pad3(ms3)}`;
+}
+function pad2(n) { return String(n).padStart(2, '0'); }
+function pad3(n) { return String(n).padStart(3, '0'); }
+function fmtDur(ms) {
+  if (ms < 1000)  return `${ms} ms`;
+  if (ms < 60000) return `${(ms/1000).toFixed(1)} s`;
+  const m = Math.floor(ms/60000), s = ((ms%60000)/1000).toFixed(0);
+  return `${m}m ${s}s`;
+}
+
+// ── Parse manifest ─────────────────────────────────────────────────────────
+function processManifest(data) {
+  let t0 = Infinity, tEnd = -Infinity;
+  for (const e of data.entries) {
+    if (e.type === 'chunk') {
+      if (e.start_timestamp_ms > 0) t0   = Math.min(t0,   e.start_timestamp_ms);
+      if (e.end_timestamp_ms   > 0) tEnd = Math.max(tEnd, e.end_timestamp_ms);
+    } else if (e.type === 'event' && e.provider_timestamp_ms > 0) {
+      t0   = Math.min(t0,   e.provider_timestamp_ms);
+      tEnd = Math.max(tEnd, e.provider_timestamp_ms);
+    } else if (e.type === 'blank_frame' && e.start_timestamp_ms > 0) {
+      t0   = Math.min(t0,   e.start_timestamp_ms);
+      tEnd = Math.max(tEnd, e.start_timestamp_ms + (e.duration_ms || 0));
+    }
+  }
+  const allEvents     = data.entries.filter(e => e.type === 'event');
+  const allChunks     = data.entries.filter(e => e.type === 'chunk');
+  const allBlankFrames= data.entries.filter(e => e.type === 'blank_frame');
+  return { t0, tEnd, duration: tEnd - t0, allEvents, allChunks, allBlankFrames };
+}
+
+// ── Speaker segments ───────────────────────────────────────────────────────
+function buildSpeakerSegments(allEvents, t0, tEnd, minDurMs) {
+  const evs = allEvents
+    .filter(e => e.event_type === 'active_speaker' && e.provider_timestamp_ms > 0)
+    .sort((a, b) => a.provider_timestamp_ms - b.provider_timestamp_ms);
+  if (evs.length === 0) return [];
+
+  // At each unique timestamp keep the last reported speaker name
+  const byTime = new Map();
+  for (const e of evs) byTime.set(e.provider_timestamp_ms, e.metadata?.user_name || 'Unknown');
+  const times = [...byTime.keys()].sort((a, b) => a - b);
+
+  // Raw segments
+  const raw = [];
+  let lastSpk = null, segStart = null;
+  for (const ts of times) {
+    const spk = byTime.get(ts);
+    if (spk !== lastSpk) {
+      if (lastSpk !== null) raw.push({ speaker: lastSpk, start: segStart, end: ts });
+      lastSpk = spk; segStart = ts;
+    }
+  }
+  if (lastSpk !== null) raw.push({ speaker: lastSpk, start: segStart, end: tEnd });
+
+  if (minDurMs <= 0) return raw;
+
+  // Absorb short segments into the previous one
+  const merged = [];
+  for (const seg of raw) {
+    if (seg.end - seg.start < minDurMs && merged.length > 0) {
+      merged[merged.length - 1].end = seg.end;
+    } else {
+      merged.push({ ...seg });
+    }
+  }
+  // Re-merge consecutive same-speaker segments created by absorption
+  const final = [];
+  for (const seg of merged) {
+    if (final.length > 0 && final[final.length-1].speaker === seg.speaker) {
+      final[final.length-1].end = seg.end;
+    } else {
+      final.push({ ...seg });
+    }
+  }
+  return final;
+}
+
+// ── Sharing segments (paired start/stop) ──────────────────────────────────
+function buildSharingSegments(allEvents, tEnd) {
+  const segs = [];
+  let shareStart = null, shareUser = null;
+  const sorted = [...allEvents]
+    .filter(e => (e.event_type === 'sharing_start' || e.event_type === 'sharing_stop') && e.provider_timestamp_ms > 0)
+    .sort((a, b) => a.provider_timestamp_ms - b.provider_timestamp_ms);
+  for (const e of sorted) {
+    if (e.event_type === 'sharing_start') {
+      shareStart = e.provider_timestamp_ms;
+      shareUser  = e.metadata?.user_name || 'Unknown';
+    } else if (e.event_type === 'sharing_stop' && shareStart !== null) {
+      segs.push({ start: shareStart, end: e.provider_timestamp_ms, user: shareUser });
+      shareStart = null;
+    }
+  }
+  if (shareStart !== null) segs.push({ start: shareStart, end: tEnd, user: shareUser });
+  return segs;
+}
+
+// ── Name format ────────────────────────────────────────────────────────────
+function fmtName(name, fmt) {
+  switch (fmt) {
+    case 'plain':    return name;
+    case 'speaking': return `Speaking: ${name}`;
+    case 'arrow':    return `▶ ${name}`;
+    default:         return `🎙 ${name}`;
+  }
+}
+
+function fmtBytes(b) {
+  if (b < 1024) return `${b} B`;
+  if (b < 1048576) return `${(b/1024).toFixed(1)} KB`;
+  return `${(b/1048576).toFixed(2)} MB`;
+}
+
+// ── Build ALL cues ─────────────────────────────────────────────────────────
+function buildAllCues(info, minDurMs, flashDurMs, nameFmt) {
+  const { t0, tEnd, duration, allEvents, allChunks, allBlankFrames } = info;
+  const cues = [];
+
+  // 1. Speaker segments
+  const speakerSegs = buildSpeakerSegments(allEvents, t0, tEnd, minDurMs);
+  for (const seg of speakerSegs) {
+    cues.push({
+      start: seg.start - t0,
+      end:   seg.end   - t0,
+      text:  fmtName(seg.speaker, nameFmt),
+      kind:  'speaker',
+    });
+  }
+
+  // 2. Sharing banners (persistent while screen is shared)
+  const sharingSegs = buildSharingSegments(allEvents, tEnd);
+  for (const seg of sharingSegs) {
+    cues.push({
+      start: seg.start - t0,
+      end:   seg.end   - t0,
+      text:  `🖥 ${seg.user} sharing screen`,
+      kind:  'sharing',
+    });
+  }
+
+  // 3. Point-event flashes — one cue per event for every event type
+  for (const e of allEvents) {
+    let relTs, text, kind;
+    const ts = e.provider_timestamp_ms;
+
+    switch (e.event_type) {
+      case 'session_update':
+        relTs = 0;
+        text  = `⚡ session_update  op=${e.metadata?.operation ?? '?'}`;
+        kind  = 'session';
+        break;
+      case 'active_speaker':
+        if (!ts) continue;
+        relTs = ts - t0;
+        text  = `🎤 active_speaker  ${e.metadata?.user_name || '?'}  (uid ${e.metadata?.user_id || '?'})`;
+        kind  = 'active-speaker-raw';
+        break;
+      case 'sharing_start':
+        if (!ts) continue;
+        relTs = ts - t0;
+        text  = `▶ sharing_start  ${e.metadata?.user_name || 'Someone'}  (uid ${e.metadata?.user_id || '?'})`;
+        kind  = 'sharing-start';
+        break;
+      case 'sharing_stop':
+        if (!ts) continue;
+        relTs = ts - t0;
+        text  = `⏹ sharing_stop`;
+        kind  = 'sharing-stop';
+        break;
+      case 'leave':
+        relTs = Math.max(0, duration - flashDurMs);
+        text  = `👋 leave  reason=${e.metadata?.reason_name || e.metadata?.reason || '?'}`;
+        kind  = 'leave';
+        break;
+      default:
+        // Unknown event types — include raw
+        relTs = ts > 0 ? ts - t0 : 0;
+        text  = `❓ ${e.event_type}`;
+        kind  = 'unknown';
+        break;
+    }
+
+    cues.push({
+      start: relTs,
+      end:   Math.min(relTs + flashDurMs, duration),
+      text,
+      kind,
+    });
+  }
+
+  // 4. Chunks — one cue spanning the chunk's actual duration
+  const CHUNK_EMOJI = { audio: '🎵', video: '🎥', deskshare: '🖥' };
+  for (const c of allChunks) {
+    if (!c.start_timestamp_ms || !c.end_timestamp_ms) continue;
+    const start = c.start_timestamp_ms - t0;
+    const end   = c.end_timestamp_ms   - t0;
+    const dur   = end - start;
+    const emoji = CHUNK_EMOJI[c.stream_id] || '📦';
+    cues.push({
+      start,
+      end,
+      text: `${emoji} ${c.stream_id} chunk #${c.chunk_sequence}  ${fmtDur(dur)}  ${c.frame_count} frames  ${fmtBytes(c.bytes_written)}`,
+      kind: `chunk-${c.stream_id}`,
+    });
+  }
+
+  // 5. Blank frames (video gaps)
+  for (const b of allBlankFrames) {
+    if (!b.start_timestamp_ms) continue;
+    const start = b.start_timestamp_ms - t0;
+    const end   = start + (b.duration_ms || 0);
+    cues.push({
+      start,
+      end,
+      text: `⬛ video_gap  ${fmtDur(b.duration_ms)}`,
+      kind: 'blank',
+    });
+  }
+
+  cues.sort((a, b) => a.start - b.start || a.kind.localeCompare(b.kind));
+  return { cues, speakerSegs, sharingSegs };
+}
+
+// ── Build VTT string ───────────────────────────────────────────────────────
+function buildVTT(cues, filename) {
+  const lines = ['WEBVTT', `NOTE Generated from ${filename}`, ''];
+  cues.forEach((c, i) => {
+    lines.push(`${i + 1}`);
+    lines.push(`${fmtVtt(c.start)} --> ${fmtVtt(c.end)}`);
+    lines.push(c.text);
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+// ── Syntax-colour preview ──────────────────────────────────────────────────
+const KIND_CLASS = {
+  speaker:            'vtt-kind-speaker',
+  sharing:            'vtt-kind-sharing',
+  'sharing-start':    'vtt-kind-sharing-start',
+  'sharing-stop':     'vtt-kind-sharing-stop',
+  'active-speaker-raw': 'vtt-kind-active-speaker-raw',
+  session:            'vtt-kind-session',
+  leave:              'vtt-kind-leave',
+  'chunk-audio':      'vtt-kind-chunk-audio',
+  'chunk-video':      'vtt-kind-chunk-video',
+  'chunk-deskshare':  'vtt-kind-chunk-deskshare',
+  blank:              'vtt-kind-blank',
+  unknown:            'vtt-kind-unknown',
+};
+let cueKindMap = []; // parallel array to cues for coloring
+
+function highlightVtt(raw, cues) {
+  // Build a map from cue index → kind
+  const kindByIdx = {};
+  cues.forEach((c, i) => { kindByIdx[i + 1] = c.kind; });
+
+  let cueIdx = null;
+  return raw.split('\n').map(line => {
+    if (line === 'WEBVTT') return `<span class="vtt-hdr">${esc(line)}</span>`;
+    if (line.startsWith('NOTE')) return `<span class="vtt-meta">${esc(line)}</span>`;
+    if (/^\d+$/.test(line.trim())) {
+      cueIdx = parseInt(line.trim(), 10);
+      return `<span class="vtt-id">${esc(line)}</span>`;
+    }
+    if (line.includes('-->')) {
+      const [ts, rest] = line.split(' --> ');
+      return `<span class="vtt-ts">${esc(ts)}</span><span class="vtt-arr"> --> </span><span class="vtt-ts">${esc(rest||'')}</span>`;
+    }
+    if (line.trim()) {
+      const cls = (cueIdx !== null && kindByIdx[cueIdx]) ? KIND_CLASS[kindByIdx[cueIdx]] || 'vtt-kind-speaker' : 'vtt-kind-speaker';
+      return `<span class="${cls}">${esc(line)}</span>`;
+    }
+    return '';
+  }).join('\n');
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── State ──────────────────────────────────────────────────────────────────
+let globalInfo     = null;
+let globalFilename = 'meeting';
+let currentVtt     = '';
+let currentCues    = [];
+
+// ── Regenerate ────────────────────────────────────────────────────────────
+function regenerate() {
+  if (!globalInfo) return;
+
+  const minDurMs  = parseInt(document.getElementById('min-dur').value, 10);
+  const flashDurMs= parseInt(document.getElementById('flash-dur').value, 10);
+  const nameFmt   = document.getElementById('name-format').value;
+
+  const { cues, speakerSegs, sharingSegs } = buildAllCues(globalInfo, minDurMs, flashDurMs, nameFmt);
+  currentCues = cues;
+  currentVtt  = buildVTT(cues, globalFilename + '.json');
+
+  // Stats
+  const speakerCount = new Set(speakerSegs.map(s => s.speaker)).size;
+  const kindCounts   = {};
+  for (const c of cues) kindCounts[c.kind] = (kindCounts[c.kind]||0) + 1;
+
+  document.getElementById('stats-row').innerHTML = [
+    { label: 'Total cues',        val: cues.length },
+    { label: 'Speaker segs',      val: kindCounts.speaker               || 0 },
+    { label: 'Active spkr events',val: kindCounts['active-speaker-raw'] || 0 },
+    { label: 'Audio chunks',      val: kindCounts['chunk-audio']        || 0 },
+    { label: 'Video chunks',      val: kindCounts['chunk-video']        || 0 },
+    { label: 'Deskshare chunks',  val: kindCounts['chunk-deskshare']    || 0 },
+    { label: 'Sharing banners',   val: kindCounts.sharing               || 0 },
+    { label: 'Other events',      val: (kindCounts['sharing-start']||0)+(kindCounts['sharing-stop']||0)+(kindCounts.session||0)+(kindCounts.leave||0) },
+    { label: 'Duration',          val: fmtDur(globalInfo.duration) },
+  ].map(s => `<div class="stat-pill"><strong>${s.val}</strong>&nbsp;${s.label}</div>`).join('');
+
+  document.getElementById('cue-count').textContent = `${cues.length} cues`;
+  document.getElementById('vtt-preview').innerHTML = highlightVtt(currentVtt, cues);
+  document.getElementById('dl-btn').disabled = cues.length === 0;
+}
+
+// ── Wire controls ──────────────────────────────────────────────────────────
+document.getElementById('name-format').addEventListener('change', regenerate);
+
+document.getElementById('min-dur').addEventListener('input', function () {
+  document.getElementById('min-dur-label').textContent = (this.value / 1000).toFixed(1) + ' s';
+  regenerate();
+});
+document.getElementById('flash-dur').addEventListener('input', function () {
+  document.getElementById('flash-dur-label').textContent = (this.value / 1000).toFixed(1) + ' s';
+  regenerate();
+});
+
+// ── Download ───────────────────────────────────────────────────────────────
+document.getElementById('dl-btn').addEventListener('click', () => {
+  if (!currentVtt) return;
+  const blob = new Blob([currentVtt], { type: 'text/vtt' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: globalFilename + '.vtt' });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// ── Copy ───────────────────────────────────────────────────────────────────
+document.getElementById('copy-btn').addEventListener('click', async () => {
+  if (!currentVtt) return;
+  try {
+    await navigator.clipboard.writeText(currentVtt);
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.innerHTML = '📋 Copy to clipboard'; }, 2000);
+  } catch {
+    alert('Copy failed — select all text in the preview and copy manually.');
+  }
+});
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+document.getElementById('reset-btn').addEventListener('click', () => {
+  globalInfo = null; currentVtt = ''; currentCues = [];
+  document.getElementById('convert-section').classList.add('hidden');
+  document.getElementById('upload-section').classList.remove('hidden');
+  document.getElementById('file-input').value = '';
+});
+
+// ── Load file ──────────────────────────────────────────────────────────────
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data.entries)) throw new Error('"entries" array not found');
+
+      globalFilename = file.name.replace(/\.[^.]+$/, '');
+      globalInfo     = processManifest(data);
+
+      document.getElementById('upload-section').classList.add('hidden');
+      document.getElementById('convert-section').classList.remove('hidden');
+
+      const evCounts = {};
+      for (const e of globalInfo.allEvents) evCounts[e.event_type] = (evCounts[e.event_type]||0)+1;
+
+      document.getElementById('fname').textContent = file.name;
+      document.getElementById('fmeta').textContent =
+        `${data.entries.length} entries · ${fmtDur(globalInfo.duration)} · ` +
+        Object.entries(evCounts).map(([k,v]) => `${v} ${k}`).join(' · ');
+
+      regenerate();
+    } catch (err) {
+      alert('⚠️ Failed to parse manifest: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('click', e => { if (!e.target.closest('.upload-btn')) fileInput.click(); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+</script>
+</body>
+</html>
